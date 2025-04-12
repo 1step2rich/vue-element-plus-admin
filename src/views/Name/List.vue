@@ -2,18 +2,18 @@
 import { ContentWrap } from '@/components/ContentWrap'
 import { useI18n } from '@/hooks/web/useI18n'
 import { Table, TableColumn } from '@/components/Table'
-import { getTableListApi } from '@/api/table'
+// import { getTableListApi } from '@/api/table'
 import { TableData } from '@/api/table/types'
 import { ref, h } from 'vue'
 import { ElTag } from 'element-plus'
-import { BaseButton } from '@/components/Button'
+// import { BaseButton } from '@/components/Button'
 import { getNameListApi } from '@/api/name'
-import { LongTextDiv } from '@/components/LongTextDiv'
+// import { LongTextDiv } from '@/components/LongTextDiv'
 
-interface Params {
-  pageIndex?: number
-  pageSize?: number
-}
+// interface Params {
+//   pageIndex?: number
+//   pageSize?: number
+// }
 
 const { t } = useI18n()
 
@@ -92,15 +92,15 @@ const columns: TableColumn[] = [
     field: 'action',
     label: t('tableDemo.action'),
     slots: {
-      default: (data) => {
-        return (
-          data.status === 0 && (
-            <BaseButton type="primary" onClick={() => actionFn(data)}>
-              {t('tableDemo.action')}
-            </BaseButton>
-          )
-        )
-      }
+      // default: (data) => {
+      //   return (
+      //     data.status === 0 && (
+      //       <BaseButton type="primary" onClick={() => actionFn(data)}>
+      //         {t('tableDemo.action')}
+      //       </BaseButton>
+      //     )
+      //   )
+      // }
     }
   }
 ]
@@ -124,9 +124,9 @@ const getTableList = async () => {
 
 getTableList()
 
-const actionFn = (data: any) => {
-  console.log(data)
-}
+// const actionFn = (data: any) => {
+//   console.log(data)
+// }
 </script>
 
 <template>
