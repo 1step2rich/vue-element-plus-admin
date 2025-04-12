@@ -39,6 +39,23 @@ const adminList = [
     ]
   },
   {
+    path: '/name',
+    component: '#',
+    name: 'Name',
+    meta: {},
+    children: [
+      {
+        path: 'list',
+        component: 'views/Name/List',
+        name: 'NameList',
+        meta: {
+          title: '名字列表',
+          icon: 'vi-bx:bxs-user'
+        }
+      }
+    ]
+  },
+  {
     path: '/external-link',
     component: '#',
     meta: {},
