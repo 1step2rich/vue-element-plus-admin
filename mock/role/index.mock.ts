@@ -55,6 +55,24 @@ const adminList = [
       }
     ]
   },
+  
+  {
+    path: '/story',
+    component: '#',
+    name: 'Story',
+    meta: {},
+    children: [
+      {
+        path: 'list',
+        component: 'views/Story/List',
+        name: 'NameList',
+        meta: {
+          title: '故事列表',
+          icon: 'vi-bx:bxs-user'
+        }
+      }
+    ]
+  },
   {
     path: '/external-link',
     component: '#',
