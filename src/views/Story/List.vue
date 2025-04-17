@@ -9,7 +9,6 @@ import { BaseButton } from '@/components/Button'
 import { FormSchema, Form } from '@/components/Form'
 import { Dialog } from '@/components/Dialog'
 import { ElRow, ElCol, ElInput, ElDivider } from 'element-plus'
-import { fa } from 'element-plus/es/locale'
 
 const keyword = ref('')
 const order_field = ref('id')
