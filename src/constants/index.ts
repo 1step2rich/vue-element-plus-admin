@@ -10,8 +10,9 @@ export const CONTENT_TYPE: AxiosContentType = 'application/json'
 
 /**
  * 请求超时时间
+ * todo 不确定怎么改单个请求，把全局的60秒改成了600秒
  */
-export const REQUEST_TIMEOUT = 60000
+export const REQUEST_TIMEOUT = 600000
 
 /**
  * 不重定向白名单

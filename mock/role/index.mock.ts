@@ -55,7 +55,6 @@ const adminList = [
       }
     ]
   },
-  
   {
     path: '/story',
     component: '#',
@@ -65,7 +64,7 @@ const adminList = [
       {
         path: 'list',
         component: 'views/Story/List',
-        name: 'NameList',
+        name: 'StoryList',
         meta: {
           title: '故事列表',
           icon: 'vi-bx:bxs-user'

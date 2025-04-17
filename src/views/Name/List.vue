@@ -1,7 +1,7 @@
 <script setup lang="tsx">
 import { ContentWrap } from '@/components/ContentWrap'
 import { useI18n } from '@/hooks/web/useI18n'
-import { Table, TableColumn } from '@/components/Table'
+import { Table, TableColumn, TableSlotDefault } from '@/components/Table'
 // import { getTableListApi } from '@/api/table'
 import { TableData } from '@/api/table/types'
 import { ref, h } from 'vue'
@@ -89,6 +89,28 @@ const columns: TableColumn[] = [
     }
   },
   {
+    field: 'expand',
+    type: 'expand',
+    slots: {
+      default: (data: TableSlotDefault) => {
+        const { row } = data
+        return (
+          <div class="ml-30px">
+            <div>
+              {t('tableDemo.title')}：{row.title}
+            </div>
+            <div>
+              {t('tableDemo.author')}：{row.author}
+            </div>
+            <div>
+              {t('tableDemo.displayTime')}：{row.display_time}
+            </div>
+          </div>
+        )
+      }
+    }
+  },
+  {
     field: 'action',
     label: t('tableDemo.action'),
     slots: {
@@ -108,6 +130,9 @@ const columns: TableColumn[] = [
 const loading = ref(true)
 
 const tableDataList = ref<TableData[]>([])
+const pageSize = ref(10)
+const currentPage = ref(1)
+const total = ref(0)
 
 const getTableList = async () => {
   const res = await getNameListApi()
@@ -119,6 +144,7 @@ const getTableList = async () => {
     })
   if (res) {
     tableDataList.value = res.data.list
+    total.value = res.data.total
   }
 }
 
@@ -135,7 +161,15 @@ getTableList()
       :columns="columns"
       :data="tableDataList"
       :loading="loading"
-      :defaultSort="{ prop: 'display_time', order: 'descending' }"
+      :defaultSort="{
+        prop: 'display_time',
+        order: 'descending'
+      }"
+      v-model:pageSize="pageSize"
+      v-model:currentPage="currentPage"
+      :pagination="{
+        total: total
+      }"
     />
   </ContentWrap>
 </template>

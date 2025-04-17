@@ -4,8 +4,8 @@ export interface StoryListReq {
   page: number
   count: number
   keyword: string
-  has_content_file:boolean 
-  has_content_file_chinese:boolean
+  has_content_file: boolean | undefined
+  has_content_file_chinese: boolean | undefined
 }
 
 export interface StoryInfo {
