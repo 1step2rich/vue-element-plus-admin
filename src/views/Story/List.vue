@@ -339,6 +339,7 @@ const draftAdd = (data) => {
     .then(() => {
       addStoryDraftApi(data.row.id)
         .then((res) => {
+          console.log(res)
           ElMessage.success('添加成功')
           refresh()
         })
