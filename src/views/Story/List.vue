@@ -2,7 +2,7 @@
 import { ContentWrap } from '@/components/ContentWrap'
 import { Table, TableColumn, TableSlotDefault } from '@/components/Table'
 import { ref, unref, reactive } from 'vue'
-import { ElMessage, ElMessageBox, ElText, UploadProps } from 'element-plus'
+import { ElMessageBox, ElText, UploadProps } from 'element-plus'
 import { getStoryListApi, modifyStoryApi, spamStoryDetailApi, translateStoryApi } from '@/api/story'
 import { useTable } from '@/hooks/web/useTable'
 import { BaseButton } from '@/components/Button'
