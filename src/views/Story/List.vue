@@ -2,8 +2,14 @@
 import { ContentWrap } from '@/components/ContentWrap'
 import { Table, TableColumn, TableSlotDefault } from '@/components/Table'
 import { ref, unref, reactive } from 'vue'
-import { ElMessageBox, ElText, UploadProps } from 'element-plus'
-import { getStoryListApi, modifyStoryApi, spamStoryDetailApi, translateStoryApi } from '@/api/story'
+import { ElMessage, ElMessageBox, ElText, UploadProps, ElSwitch } from 'element-plus'
+import {
+  addStoryDraftApi,
+  getStoryListApi,
+  modifyStoryApi,
+  spamStoryDetailApi,
+  translateStoryApi
+} from '@/api/story'
 import { useTable } from '@/hooks/web/useTable'
 import { BaseButton } from '@/components/Button'
 import { FormSchema, Form } from '@/components/Form'
@@ -15,6 +21,7 @@ const order_field = ref('id')
 const order_type = ref('desc')
 const has_content_file = ref<undefined | boolean>(undefined)
 const has_content_file_chinese = ref<undefined | boolean>(undefined)
+const is_publish = ref<undefined | boolean>(undefined)
 
 const { tableRegister, tableMethods, tableState } = useTable({
   fetchDataApi: async () => {
@@ -26,7 +33,8 @@ const { tableRegister, tableMethods, tableState } = useTable({
       count: unref(pageSize),
       keyword: unref(keyword),
       has_content_file: unref(has_content_file),
-      has_content_file_chinese: unref(has_content_file_chinese)
+      has_content_file_chinese: unref(has_content_file_chinese),
+      is_publish: unref(is_publish)
     })
     return {
       list: res.data.list,
@@ -51,14 +59,6 @@ const columns: TableColumn[] = [
     label: '标题',
     field: '',
     width: '400px'
-  },
-  {
-    formatter: (row: Recordable) => {
-      return `${row.detail_chinese}/${row.detail}`
-    },
-    label: '开头',
-    field: '',
-    width: '700px'
   },
   {
     field: 'expand',
@@ -99,6 +99,22 @@ const columns: TableColumn[] = [
     width: '100px'
   },
   {
+    field: 'is_publish',
+    label: '是否发布',
+    width: '100px',
+    formatter: (row: Recordable) => {
+      return row.is_publish ? '是' : '否'
+    }
+  },
+  {
+    field: 'draft_media_id',
+    label: '草稿ID',
+    width: '100px',
+    formatter: (row: Recordable) => {
+      return row.draft_media_id ? row.draft_media_id : '无'
+    }
+  },
+  {
     field: 'action',
     label: '打开原文',
     slots: {
@@ -107,7 +123,7 @@ const columns: TableColumn[] = [
         return (
           <div>
             <BaseButton
-              type="primary"
+              type="default"
               onClick={function () {
                 window.open(row.link)
                 console.log(row.link)
@@ -118,6 +134,12 @@ const columns: TableColumn[] = [
             <BaseButton type="primary" onClick={() => editAction(data)}>
               查看修改
             </BaseButton>
+
+            {!row.is_publish && (
+              <BaseButton type="primary" onClick={() => draftAdd(data)}>
+                发布为公众号草稿
+              </BaseButton>
+            )}
           </div>
         )
       }
@@ -262,6 +284,37 @@ const schema = reactive<FormSchema[]>([
     colProps: {
       span: 3
     }
+  },
+  {
+    field: 'field6',
+    label: '是否发布',
+    component: 'Select',
+    componentProps: {
+      options: [
+        {
+          label: '不限',
+          value: ''
+        },
+        {
+          label: '已发布',
+          value: true
+        },
+        {
+          label: '未发布',
+          value: false
+        }
+      ],
+      on: {
+        change: function (value: boolean | '') {
+          is_publish.value = value === '' ? undefined : value
+        }
+      },
+      style: { width: '100px' }
+    },
+    value: is_publish.value,
+    colProps: {
+      span: 3
+    }
   }
 ])
 
@@ -276,8 +329,26 @@ function editAction(data) {
   editData.value.title_chinese_edit = editData.value.title_chinese
   editData.value.detail_chinese_edit = editData.value.detail_chinese
   editData.value.cover_edit = editData.value.cover
+  editData.value.is_publish_edit = editData.value.is_publish
   dialogVisible.value = true
   console.log(data)
+}
+
+const draftAdd = (data) => {
+  ElMessageBox.confirm('确认要添加到公众号草稿吗？')
+    .then(() => {
+      addStoryDraftApi(data.row.id)
+        .then((res) => {
+          ElMessage.success('添加成功')
+          refresh()
+        })
+        .catch((err) => {
+          console.log(err)
+        })
+    })
+    .catch(() => {
+      // catch error
+    })
 }
 const handleClose = (done: () => void) => {
   if (change.value == false) {
@@ -299,7 +370,8 @@ const handlerModify = () => {
     detail_chinese: editData.value.detail_chinese_edit ?? undefined,
     title_chinese: editData.value.title_chinese_edit ?? undefined,
     content_file_chinese: editData.value.content_file_chinese_edit ?? undefined,
-    cover: editData.value.cover_edit ?? undefined
+    cover: editData.value.cover_edit ?? undefined,
+    is_publish: editData.value.is_publish_edit ?? undefined
   })
   dialogVisible.value = false
   refresh()
@@ -426,6 +498,17 @@ const handleAvatarSuccess: UploadProps['onSuccess'] = (response) => {
         >
           <BaseButton type="default">选择封面图片</BaseButton>
         </ElUpload>
+      </ElCol>
+    </ElRow>
+    <ElDivider />
+
+    <ElRow>
+      <ElCol :span="12">
+        <ElText>是否已经发布：{{ editData.is_publish ? '是' : '否' }}</ElText>
+      </ElCol>
+      <ElCol :span="1" />
+      <ElCol :span="11">
+        <ElSwitch v-model="editData.is_publish_edit"></ElSwitch>
       </ElCol>
     </ElRow>
     <template #footer>

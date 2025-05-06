@@ -6,6 +6,7 @@ export interface StoryListReq {
   keyword: string
   has_content_file: boolean | undefined
   has_content_file_chinese: boolean | undefined
+  is_publish: boolean | undefined
 }
 
 export interface StoryInfo {
@@ -14,4 +15,5 @@ export interface StoryInfo {
   detail_chinese: string
   content_file_chinese: string
   cover: string
+  is_publish: boolean
 }
