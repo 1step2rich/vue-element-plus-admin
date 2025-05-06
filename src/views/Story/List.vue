@@ -336,21 +336,6 @@ const handlerReSpamDetail = () => {
 const handleAvatarSuccess: UploadProps['onSuccess'] = (response) => {
   editData.value.cover_edit = response.data
 }
-
-const beforeAvatarUpload: UploadProps['beforeUpload'] = (rawFile) => {
-  if (
-    rawFile.type !== 'image/jpeg' &&
-    rawFile.type !== 'image/png' &&
-    rawFile.type !== 'image/webp'
-  ) {
-    ElMessage.error('Must be a picture!')
-    return false
-  } else if (rawFile.size / 1024 / 1024 > 4) {
-    ElMessage.error('Avatar picture size can not exceed 2MB!')
-    return false
-  }
-  return true
-}
 </script>
 
 <template>
@@ -435,8 +420,8 @@ const beforeAvatarUpload: UploadProps['beforeUpload'] = (rawFile) => {
       <ElCol :span="11">
         <ElUpload
           :show-file-list="false"
+          accept="image/*"
           :on-success="handleAvatarSuccess"
-          :before-upload="beforeAvatarUpload"
           action="/common/upload_file?scene=story_cover"
         >
           <BaseButton type="default">选择封面图片</BaseButton>
