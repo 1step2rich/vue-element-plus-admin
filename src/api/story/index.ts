@@ -12,3 +12,6 @@ export const modifyStoryApi = (data: StoryInfo) => {
 export const translateStoryApi = (id: number) => {
   return request.get({ url: `/story/translate?id=${id}` })
 }
+export const spamStoryDetailApi = (id: number) => {
+  return request.get({ url: `/story/spam_detail?id=${id}` })
+}

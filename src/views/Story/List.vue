@@ -2,13 +2,13 @@
 import { ContentWrap } from '@/components/ContentWrap'
 import { Table, TableColumn, TableSlotDefault } from '@/components/Table'
 import { ref, unref, reactive } from 'vue'
-import { ElMessageBox, ElText } from 'element-plus'
-import { getStoryListApi, modifyStoryApi, translateStoryApi } from '@/api/story'
+import { ElMessage, ElMessageBox, ElText, UploadProps } from 'element-plus'
+import { getStoryListApi, modifyStoryApi, spamStoryDetailApi, translateStoryApi } from '@/api/story'
 import { useTable } from '@/hooks/web/useTable'
 import { BaseButton } from '@/components/Button'
 import { FormSchema, Form } from '@/components/Form'
 import { Dialog } from '@/components/Dialog'
-import { ElRow, ElCol, ElInput, ElDivider } from 'element-plus'
+import { ElRow, ElCol, ElInput, ElDivider, ElImage, ElUpload } from 'element-plus'
 
 const keyword = ref('')
 const order_field = ref('id')
@@ -275,6 +275,7 @@ function editAction(data) {
   editData.value.content_file_chinese_edit = editData.value.content_file_chinese
   editData.value.title_chinese_edit = editData.value.title_chinese
   editData.value.detail_chinese_edit = editData.value.detail_chinese
+  editData.value.cover_edit = editData.value.cover
   dialogVisible.value = true
   console.log(data)
 }
@@ -297,7 +298,8 @@ const handlerModify = () => {
     id: editData.value.id,
     detail_chinese: editData.value.detail_chinese_edit ?? undefined,
     title_chinese: editData.value.title_chinese_edit ?? undefined,
-    content_file_chinese: editData.value.content_file_chinese_edit ?? undefined
+    content_file_chinese: editData.value.content_file_chinese_edit ?? undefined,
+    cover: editData.value.cover_edit ?? undefined
   })
   dialogVisible.value = false
   refresh()
@@ -315,6 +317,39 @@ const handlerTranslate = () => {
       console.log(err)
       fullscreenLoading.value = false
     })
+}
+const handlerReSpamDetail = () => {
+  fullscreenLoading.value = true
+  spamStoryDetailApi(editData.value.id)
+    .then((res) => {
+      editData.value.content_file = res.data.content_file
+      fullscreenLoading.value = false
+    })
+    .catch((err) => {
+      console.log(err)
+      fullscreenLoading.value = false
+    })
+}
+
+// 上传
+
+const handleAvatarSuccess: UploadProps['onSuccess'] = (response) => {
+  editData.value.cover_edit = response.data
+}
+
+const beforeAvatarUpload: UploadProps['beforeUpload'] = (rawFile) => {
+  if (
+    rawFile.type !== 'image/jpeg' &&
+    rawFile.type !== 'image/png' &&
+    rawFile.type !== 'image/webp'
+  ) {
+    ElMessage.error('Must be a picture!')
+    return false
+  } else if (rawFile.size / 1024 / 1024 > 4) {
+    ElMessage.error('Avatar picture size can not exceed 2MB!')
+    return false
+  }
+  return true
 }
 </script>
 
@@ -385,7 +420,27 @@ const handlerTranslate = () => {
       <ElCol :span="1" />
       <ElCol :span="11">
         <ElText>原文字数:{{ editData.word_count }}</ElText>
+        <BaseButton @click="handlerReSpamDetail" v-loading.fullscreen.lock="fullscreenLoading"
+          >重新抓取原文</BaseButton
+        >
         <ElInput v-model:modelValue="editData.content_file" type="textarea" disabled autosize />
+      </ElCol>
+    </ElRow>
+    <ElDivider />
+    <ElRow>
+      <ElCol :span="12">
+        <ElText>封面</ElText><ElImage :src="editData.cover_edit"></ElImage>
+      </ElCol>
+      <ElCol :span="1" />
+      <ElCol :span="11">
+        <ElUpload
+          :show-file-list="false"
+          :on-success="handleAvatarSuccess"
+          :before-upload="beforeAvatarUpload"
+          action="/common/upload_file?scene=story_cover"
+        >
+          <BaseButton type="default">选择封面图片</BaseButton>
+        </ElUpload>
       </ElCol>
     </ElRow>
     <template #footer>

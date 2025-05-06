@@ -13,4 +13,5 @@ export interface StoryInfo {
   title_chinese: string
   detail_chinese: string
   content_file_chinese: string
+  cover: string
 }

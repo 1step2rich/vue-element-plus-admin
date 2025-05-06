@@ -73,6 +73,23 @@ const adminList = [
     ]
   },
   {
+    path: '/how_much',
+    component: '#',
+    name: 'HowMuch',
+    meta: {},
+    children: [
+      {
+        path: 'list',
+        component: 'views/HowMuch/Add',
+        name: 'HowMuchMain',
+        meta: {
+          title: '有多少钱？',
+          icon: 'vi-bx:bxs-user'
+        }
+      }
+    ]
+  },
+  {
     path: '/external-link',
     component: '#',
     meta: {},
