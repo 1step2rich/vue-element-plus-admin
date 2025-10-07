@@ -10,7 +10,7 @@ export const loginApi = (data: UserType): Promise<IResponse<UserType>> => {
 }
 
 export const loginOutApi = (): Promise<IResponse> => {
-  return request.get({ url: '/mock/user/loginOut' })
+  return request.get({ url: '/name/admin/login_out' })
 }
 
 export const getUserListApi = ({ params }: AxiosConfig) => {
@@ -26,7 +26,7 @@ export const getUserListApi = ({ params }: AxiosConfig) => {
 export const getAdminRoleApi = (
   params: RoleParams
 ): Promise<IResponse<AppCustomRouteRecordRaw[]>> => {
-  return request.get({ url: '/mock/role/list', params })
+  return request.get({ url: '/name/admin/role/list', params })
 }
 
 export const getTestRoleApi = (params: RoleParams): Promise<IResponse<string[]>> => {
