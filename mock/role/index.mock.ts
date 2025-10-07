@@ -90,6 +90,36 @@ const adminList = [
     ]
   },
   {
+    path: '/world',
+    component: '#',
+    name: 'World',
+    meta: {
+      title: '探索世界',
+      icon: 'fluent-emoji-high-contrast:world-map',
+      alwaysShow: true
+    },
+    children: [
+      {
+        path: 'fog',
+        component: 'views/World/Fog',
+        name: 'WorldFog',
+        meta: {
+          title: '世界迷雾',
+          icon: 'ic:outline-map'
+        }
+      },
+      {
+        path: 'flight',
+        component: 'views/World/Flight',
+        name: 'WorldFlight',
+        meta: {
+          title: '航班',
+          icon: 'vi-cib:telegram-plane'
+        }
+      }
+    ]
+  },
+  {
     path: '/external-link',
     component: '#',
     meta: {},
