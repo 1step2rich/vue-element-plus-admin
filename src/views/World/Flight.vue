@@ -337,13 +337,19 @@ const handleRemoteSearch = async (keyword: string) => {
     try {
       const res = await getAirportListApi()
       const filteredAirports = res.data.list.filter((airport: AirportItem) =>
-        `${airport.city} ${airport.name}`.includes(keyword)
+        `${airport.city} ${airport.name}`.toLowerCase().includes(keyword.toLowerCase())
       )
+      // 更新机场列表
+      airports.value = filteredAirports
       // 显示添加按钮如果没有找到匹配项
       showAddButton.value = filteredAirports.length === 0
     } catch (error) {
       ElMessage.error('搜索失败')
     }
+  } else {
+    // 如果没有关键词，加载完整列表
+    loadAirports()
+    showAddButton.value = false
   }
 }
 
@@ -418,7 +424,7 @@ onMounted(() => {
             :value="airport.id"
           />
           <template #empty>
-            <div v-if="showAddButton" style=" padding: 10px;text-align: center">
+            <div v-if="showAddButton" style="padding: 10px; text-align: center">
               未找到该地点，
               <ElButton type="text" size="small" @click="handleAddAirport"> 前往添加 </ElButton>
             </div>
@@ -444,7 +450,7 @@ onMounted(() => {
             :value="airport.id"
           />
           <template #empty>
-            <div v-if="showAddButton" style=" padding: 10px;text-align: center">
+            <div v-if="showAddButton" style="padding: 10px; text-align: center">
               未找到该地点，
               <ElButton type="text" size="small" @click="handleAddAirport"> 前往添加 </ElButton>
             </div>
