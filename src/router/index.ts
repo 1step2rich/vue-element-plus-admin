@@ -81,6 +81,34 @@ export const constantRouterMap: AppRouteRecordRaw[] = [
 
 export const asyncRouterMap: AppRouteRecordRaw[] = [
   {
+    path: '/world',
+    component: Layout,
+    redirect: '/world/flight',
+    name: 'World',
+    meta: {
+      title: '世界数据',
+      icon: 'vi-bi:globe'
+    },
+    children: [
+      {
+        path: 'flight',
+        component: () => import('@/views/World/Flight.vue'),
+        name: 'Flight',
+        meta: {
+          title: '航班/火车管理'
+        }
+      },
+      {
+        path: 'airport',
+        component: () => import('@/views/World/Airport.vue'),
+        name: 'Airport',
+        meta: {
+          title: '机场/火车站管理'
+        }
+      }
+    ]
+  },
+  {
     path: '/dashboard',
     component: Layout,
     redirect: '/dashboard/analysis',

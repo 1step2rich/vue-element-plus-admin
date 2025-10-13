@@ -1,8 +1,9 @@
 <script setup lang="tsx">
 import { ContentWrap } from '@/components/ContentWrap'
 import { Table, TableColumn, TableSlotDefault } from '@/components/Table'
-import { ref, unref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox, ElOption, ElTooltip } from 'element-plus'
+import { ref, unref, reactive, onMounted, nextTick } from 'vue'
+import { ElMessage, ElMessageBox, ElOption, ElTooltip, ElButton } from 'element-plus'
+import { useRouter } from 'vue-router'
 import {
   getFlightListApi,
   deleteFlightApi,
@@ -24,6 +25,9 @@ const flight_type = ref<1 | 2 | undefined>(undefined)
 
 // 机场列表
 const airports = ref<AirportItem[]>([])
+const router = useRouter()
+const searchKeyword = ref('')
+const showAddButton = ref(false)
 
 // 获取机场列表
 const loadAirports = async () => {
@@ -84,7 +88,17 @@ const columns: TableColumn[] = [
     formatter: (row: FlightListItem) => {
       return (
         <ElTooltip content={`${row.from_airport_info.city} ${row.from_airport_info.name}`}>
-          <span>{row.from_airport_info.name}</span>
+          <span
+            style="cursor: pointer; color: #409eff;"
+            onClick={() =>
+              router.push({
+                path: '/world/airport',
+                query: { id: row.from_airport_id }
+              })
+            }
+          >
+            {row.from_airport_info.name}
+          </span>
         </ElTooltip>
       )
     }
@@ -96,7 +110,17 @@ const columns: TableColumn[] = [
     formatter: (row: FlightListItem) => {
       return (
         <ElTooltip content={`${row.to_airport_info.city} ${row.to_airport_info.name}`}>
-          <span>{row.to_airport_info.name}</span>
+          <span
+            style="cursor: pointer; color: #409eff;"
+            onClick={() =>
+              router.push({
+                path: '/world/airport',
+                query: { id: row.to_airport_id }
+              })
+            }
+          >
+            {row.to_airport_info.name}
+          </span>
         </ElTooltip>
       )
     }
@@ -306,6 +330,41 @@ const handleSave = async () => {
   }
 }
 
+// 远程搜索处理
+const handleRemoteSearch = async (keyword: string) => {
+  if (keyword.trim()) {
+    searchKeyword.value = keyword
+    try {
+      const res = await getAirportListApi()
+      const filteredAirports = res.data.list.filter((airport: AirportItem) =>
+        `${airport.city} ${airport.name}`.includes(keyword)
+      )
+      // 显示添加按钮如果没有找到匹配项
+      showAddButton.value = filteredAirports.length === 0
+    } catch (error) {
+      ElMessage.error('搜索失败')
+    }
+  }
+}
+
+// 下拉框显示状态变化
+const handleVisibleChange = (visible: boolean) => {
+  if (!visible) {
+    showAddButton.value = false
+  }
+}
+
+// 跳转到添加机场页面
+const handleAddAirport = () => {
+  dialogVisible.value = false
+  nextTick(() => {
+    router.push({
+      path: '/world/airport',
+      query: { add: 'true', keyword: searchKeyword.value }
+    })
+  })
+}
+
 // 组件挂载时加载机场列表
 onMounted(() => {
   loadAirports()
@@ -342,24 +401,54 @@ onMounted(() => {
     <ElRow :gutter="20">
       <ElCol :span="12">
         <label class="block text-sm font-medium mb-2">出发地</label>
-        <ElSelect v-model="formData.from_airport_id" placeholder="请选择出发地" style="width: 100%">
+        <ElSelect
+          v-model="formData.from_airport_id"
+          placeholder="请选择出发地"
+          style="width: 100%"
+          filterable
+          remote
+          reserveKeyword
+          :remote-method="handleRemoteSearch"
+          @visible-change="handleVisibleChange"
+        >
           <ElOption
             v-for="airport in airports"
             :key="airport.id"
-            :label="airport.name"
+            :label="`${airport.city} ${airport.name}`"
             :value="airport.id"
           />
+          <template #empty>
+            <div v-if="showAddButton" style=" padding: 10px;text-align: center">
+              未找到该地点，
+              <ElButton type="text" size="small" @click="handleAddAirport"> 前往添加 </ElButton>
+            </div>
+          </template>
         </ElSelect>
       </ElCol>
       <ElCol :span="12">
         <label class="block text-sm font-medium mb-2">目的地</label>
-        <ElSelect v-model="formData.to_airport_id" placeholder="请选择目的地" style="width: 100%">
+        <ElSelect
+          v-model="formData.to_airport_id"
+          placeholder="请选择目的地"
+          style="width: 100%"
+          filterable
+          remote
+          reserveKeyword
+          :remote-method="handleRemoteSearch"
+          @visible-change="handleVisibleChange"
+        >
           <ElOption
             v-for="airport in airports"
             :key="airport.id"
-            :label="airport.name"
+            :label="`${airport.city} ${airport.name}`"
             :value="airport.id"
           />
+          <template #empty>
+            <div v-if="showAddButton" style=" padding: 10px;text-align: center">
+              未找到该地点，
+              <ElButton type="text" size="small" @click="handleAddAirport"> 前往添加 </ElButton>
+            </div>
+          </template>
         </ElSelect>
       </ElCol>
     </ElRow>
