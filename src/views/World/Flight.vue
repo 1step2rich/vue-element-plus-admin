@@ -2,7 +2,7 @@
 import { ContentWrap } from '@/components/ContentWrap'
 import { Table, TableColumn, TableSlotDefault } from '@/components/Table'
 import { ref, unref, reactive, onMounted, nextTick } from 'vue'
-import { ElMessage, ElMessageBox, ElOption, ElTooltip, ElButton } from 'element-plus'
+import { ElMessage, ElMessageBox, ElOption, ElTooltip, ElButton, ElUpload } from 'element-plus'
 import { useRouter } from 'vue-router'
 import {
   getFlightListApi,
@@ -17,11 +17,12 @@ import { FormSchema, Form } from '@/components/Form'
 import { Dialog } from '@/components/Dialog'
 import { ElRow, ElCol, ElInput, ElSelect } from 'element-plus'
 import type { FlightListItem, AirportItem } from '../../api/flight/types'
+import request from '@/axios'
 
 // 筛选条件
-const start_time = ref(undefined as string | undefined)
-const end_time = ref(undefined as string | undefined)
-const flight_type = ref<1 | 2 | undefined>(undefined)
+const start_time = ref(null as string | null)
+const end_time = ref(null as string | null)
+const flight_type = ref<1 | 2 | null>(null)
 
 // 机场列表
 const airports = ref<AirportItem[]>([])
@@ -154,6 +155,53 @@ const columns: TableColumn[] = [
     }
   },
   {
+    label: '路线图',
+    field: '',
+    width: '300px',
+    slots: {
+      default: (data: TableSlotDefault) => {
+        const { row } = data
+        const flight = row as unknown as FlightListItem
+        const roadMap = flight.extra?.road_map || ''
+
+        return (
+          <div class="flex flex-col gap-5px">
+            {roadMap && (
+              <a href={roadMap} target="_blank">
+                {roadMap}
+              </a>
+            )}
+            <div class="flex gap-5px">
+              <BaseButton
+                type="primary"
+                size="small"
+                onClick={() => handleUploadRoadMap(flight.id)}
+              >
+                上传
+              </BaseButton>
+              <BaseButton
+                type="primary"
+                size="small"
+                onClick={() => handleGenerateRoadMap(flight.id)}
+              >
+                抓取
+              </BaseButton>
+              {roadMap && (
+                <BaseButton
+                  type="primary"
+                  size="small"
+                  onClick={() => handleViewRoadMap(flight.id, roadMap)}
+                >
+                  展示路线图
+                </BaseButton>
+              )}
+            </div>
+          </div>
+        )
+      }
+    }
+  },
+  {
     field: 'action',
     label: '操作',
     width: '150px',
@@ -223,13 +271,17 @@ const schema = reactive<FormSchema[]>([
     component: 'Select',
     componentProps: {
       options: [
-        { label: '全部', value: undefined },
+        { label: '全部', value: 0 },
         { label: '飞机', value: 1 },
         { label: '火车', value: 2 }
       ],
       on: {
-        change: (value: 1 | 2 | undefined) => {
-          flight_type.value = value
+        change: (value: 1 | 2 | 0) => {
+          if (value === 0) {
+            flight_type.value = null
+          } else {
+            flight_type.value = value
+          }
         }
       },
       style: { width: '120px' }
@@ -256,6 +308,15 @@ const formData = reactive({
   seat_number: '',
   price: 0
 })
+
+// 路线图相关弹窗
+const uploadDialogVisible = ref(false)
+const generateDialogVisible = ref(false)
+const viewDialogVisible = ref(false)
+const currentFlightId = ref(0)
+const currentRoadMap = ref('')
+const generateMessages = ref<string[]>([])
+const uploadFile = ref<any>(null)
 
 // 打开编辑弹窗
 const handleEdit = (row: FlightListItem) => {
@@ -369,6 +430,125 @@ const handleAddAirport = () => {
       query: { add: 'true', keyword: searchKeyword.value }
     })
   })
+}
+
+// 处理文件选择变化
+const handleFileChange = (fileOrFileList: any, fileList?: any[]) => {
+  // 处理不同版本Element Plus可能的参数差异
+  let selectedFile = null
+
+  if (fileList && Array.isArray(fileList) && fileList.length > 0) {
+    // 某些版本中，第二个参数是文件列表
+    selectedFile = fileList[fileList.length - 1]
+  } else if (fileOrFileList && fileOrFileList.raw) {
+    // 直接使用第一个参数作为文件
+    selectedFile = fileOrFileList
+  } else if (Array.isArray(fileOrFileList) && fileOrFileList.length > 0) {
+    // 某些版本中，第一个参数是文件列表
+    selectedFile = fileOrFileList[fileOrFileList.length - 1]
+  }
+
+  console.log('文件选择变化 - 原始参数1:', fileOrFileList)
+  console.log('文件选择变化 - 原始参数2:', fileList)
+  console.log('解析出的文件:', selectedFile)
+
+  if (uploadFile && selectedFile) {
+    uploadFile.value = selectedFile
+    console.log('uploadFile已设置:', uploadFile.value)
+    console.log('uploadFile.value.raw存在:', !!uploadFile.value.raw)
+  } else {
+    console.error('uploadFile为空或没有选择文件')
+  }
+}
+
+// 处理上传路线图
+const handleUploadRoadMap = (flightId: number) => {
+  console.log('打开上传弹窗前:')
+  console.log('uploadFile对象:', uploadFile)
+  currentFlightId.value = flightId
+  if (uploadFile) {
+    uploadFile.value = null
+    console.log('已将uploadFile.value重置为null')
+  }
+  uploadDialogVisible.value = true
+  console.log('上传弹窗已打开')
+}
+
+// 上传文件处理
+const handleUploadFile = async () => {
+  console.log('点击确认按钮，检查uploadFile状态:')
+  console.log('uploadFile对象:', uploadFile)
+  console.log('uploadFile.value:', uploadFile?.value)
+  console.log('uploadFile.value.raw:', uploadFile?.value?.raw)
+
+  if (!uploadFile || !uploadFile.value || !uploadFile.value.raw) {
+    ElMessage.warning('请先选择文件')
+    return
+  }
+
+  try {
+    // 创建FormData对象
+    const formData = new FormData()
+    formData.append('flight_id', currentFlightId.value.toString())
+    formData.append('field_name', 'road_map')
+    formData.append('file', uploadFile.value.raw)
+
+    // 直接使用axios实例上传文件，使用multipart/form-data
+    await request.post({
+      url: '/fog/flight/update_extra',
+      data: formData,
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+    ElMessage.success('上传成功')
+    uploadDialogVisible.value = false
+    refresh()
+  } catch (error) {
+    ElMessage.error('上传失败')
+  }
+}
+
+// 处理抓取路线图
+const handleGenerateRoadMap = (flightId: number) => {
+  currentFlightId.value = flightId
+  generateMessages.value = []
+  generateDialogVisible.value = true
+  startGenerateRoadMap()
+}
+
+// 开始抓取路线图
+const startGenerateRoadMap = () => {
+  // 创建 SSE 连接
+  const eventSource = new EventSource(
+    `/fog/flight/road_map/generate?flight_id=${currentFlightId.value}`
+  )
+
+  eventSource.onmessage = (event) => {
+    const data = JSON.parse(event.data)
+    generateMessages.value.push(data.message)
+
+    if (data.status === 'success') {
+      eventSource.close()
+      ElMessage.success('抓取成功')
+      setTimeout(() => {
+        generateDialogVisible.value = false
+        refresh()
+      }, 1000)
+    }
+  }
+
+  eventSource.onerror = () => {
+    eventSource.close()
+    ElMessage.error('抓取失败')
+  }
+}
+
+// 处理查看路线图
+const handleViewRoadMap = (flightId: number, roadMap: string) => {
+  currentRoadMap.value = roadMap
+  viewDialogVisible.value = true
+  console.log(flightId)
 }
 
 // 组件挂载时加载机场列表
@@ -510,6 +690,48 @@ onMounted(() => {
     <template #footer>
       <BaseButton @click="dialogVisible = false">取消</BaseButton>
       <BaseButton type="primary" @click="handleSave">确定</BaseButton>
+    </template>
+  </Dialog>
+
+  <!-- 上传路线图弹窗 -->
+  <Dialog v-model="uploadDialogVisible" title="上传路线图" width="500px">
+    <ElUpload
+      class="upload-demo"
+      action="#"
+      :before-upload="() => false"
+      :auto-upload="false"
+      :on-change="handleFileChange"
+    >
+      <ElButton>选择文件</ElButton>
+    </ElUpload>
+    <div style="margin-top: 20px">{{ uploadFile && uploadFile.value?.name }}</div>
+    <template #footer>
+      <BaseButton @click="uploadDialogVisible = false">取消</BaseButton>
+      <BaseButton type="primary" @click="handleUploadFile">确定</BaseButton>
+    </template>
+  </Dialog>
+
+  <!-- 抓取路线图弹窗 -->
+  <Dialog v-model="generateDialogVisible" title="抓取路线图" width="600px">
+    <div style="max-height: 400px; padding: 10px; overflow-y: auto">
+      <div v-for="(msg, index) in generateMessages" :key="index" class="mb-2">
+        {{ msg }}
+      </div>
+    </div>
+  </Dialog>
+
+  <!-- 查看路线图弹窗 -->
+  <Dialog v-model="viewDialogVisible" title="路线图" width="100%" height="100%" fullscreen>
+    <div style="width: 100%; height: 100%">
+      <!-- 这里需要引入KML文件解析和地图展示的库 -->
+      <!-- 由于没有具体的KML展示库，这里只做简单显示 -->
+      <div style="display: flex; justify-content: center; align-items: center; height: 100%">
+        <div>路线图文件: {{ currentRoadMap }}</div>
+        <div style="margin-top: 20px">KML地图展示区域(需要引入地图库实现)</div>
+      </div>
+    </div>
+    <template #footer>
+      <BaseButton @click="viewDialogVisible = false">关闭</BaseButton>
     </template>
   </Dialog>
 </template>

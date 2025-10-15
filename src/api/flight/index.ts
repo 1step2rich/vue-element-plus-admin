@@ -33,3 +33,15 @@ export const getAirportListApi = () => {
     url: '/fog/airport/list'
   })
 }
+
+// 更新航班额外信息
+export const updateFlightExtraApi = (data: {
+  flight_id: number
+  field_name: string
+  file: string
+}) => {
+  return request.post({
+    url: '/fog/flight/update_extra',
+    data
+  })
+}

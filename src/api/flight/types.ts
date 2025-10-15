@@ -1,9 +1,9 @@
 export interface FlightListParams {
   page: number
   page_size: number
-  start_time?: string
-  end_time?: string
-  flight_type?: 1 | 2 // 1是飞机，2是火车
+  start_time?: string | null
+  end_time?: string | null
+  flight_type?: 1 | 2 | null // 1是飞机，2是火车
 }
 
 export interface AirportInfo {
