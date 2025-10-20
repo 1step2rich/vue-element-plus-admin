@@ -114,42 +114,6 @@ const columns: TableColumn[] = [
 // 搜索表单配置
 const schema = reactive<FormSchema[]>([
   {
-    field: 'start_time',
-    label: '开始时间',
-    component: 'DatePicker',
-    value: start_time,
-    componentProps: {
-      type: 'datetime',
-      on: {
-        change: (value: string) => {
-          start_time.value = value
-        }
-      },
-      style: { width: '200px' }
-    },
-    colProps: {
-      span: 8
-    }
-  },
-  {
-    field: 'end_time',
-    label: '结束时间',
-    component: 'DatePicker',
-    value: end_time,
-    componentProps: {
-      type: 'datetime',
-      on: {
-        change: (value: string) => {
-          end_time.value = value
-        }
-      },
-      style: { width: '200px' }
-    },
-    colProps: {
-      span: 8
-    }
-  },
-  {
     field: 'airport_type',
     label: '类型',
     component: 'Select',
@@ -164,11 +128,11 @@ const schema = reactive<FormSchema[]>([
           airport_type.value = value
         }
       },
-      style: { width: '120px' }
+      style: { width: '200px' }
     },
     value: airport_type.value,
     colProps: {
-      span: 8
+      span: 15
     }
   }
 ])

@@ -67,12 +67,12 @@ const columns: TableColumn[] = [
   {
     label: 'ID',
     field: 'id',
-    width: '80px'
+    width: '60px'
   },
   {
     label: '类型',
     field: 'flight_type',
-    width: '80px',
+    width: '60px',
     formatter: (row: FlightListItem) => {
       return row.type === 1 ? '飞机' : '火车'
     }
@@ -80,71 +80,76 @@ const columns: TableColumn[] = [
   {
     label: '航班/车次号',
     field: 'number',
-    width: '120px'
+    width: '100px'
   },
   {
-    label: '出发地',
+    label: '地点信息',
     field: '',
-    width: '180px',
+    width: '200px',
     formatter: (row: FlightListItem) => {
       return (
-        <ElTooltip content={`${row.from_airport_info.city} ${row.from_airport_info.name}`}>
-          <span
-            style="cursor: pointer; color: #409eff;"
-            onClick={() =>
-              router.push({
-                path: '/world/airport',
-                query: { id: row.from_airport_id }
-              })
-            }
-          >
-            {row.from_airport_info.name}
-          </span>
-        </ElTooltip>
+        <div>
+          <ElTooltip content={`${row.from_airport_info.city} ${row.from_airport_info.name}`}>
+            <div>
+              <span>出发: </span>
+              <span
+                style="cursor: pointer; color: #409eff;"
+                onClick={() =>
+                  router.push({
+                    path: '/world/airport',
+                    query: { id: row.from_airport_id }
+                  })
+                }
+              >
+                {row.from_airport_info.name}
+              </span>
+            </div>
+          </ElTooltip>
+          <ElTooltip content={`${row.to_airport_info.city} ${row.to_airport_info.name}`}>
+            <div>
+              <span>到达: </span>
+              <span
+                style="cursor: pointer; color: #409eff;"
+                onClick={() =>
+                  router.push({
+                    path: '/world/airport',
+                    query: { id: row.to_airport_id }
+                  })
+                }
+              >
+                {row.to_airport_info.name}
+              </span>
+            </div>
+          </ElTooltip>
+        </div>
       )
     }
   },
   {
-    label: '目的地',
+    label: '时间信息',
     field: '',
-    width: '180px',
+    width: '200px',
     formatter: (row: FlightListItem) => {
       return (
-        <ElTooltip content={`${row.to_airport_info.city} ${row.to_airport_info.name}`}>
-          <span
-            style="cursor: pointer; color: #409eff;"
-            onClick={() =>
-              router.push({
-                path: '/world/airport',
-                query: { id: row.to_airport_id }
-              })
-            }
-          >
-            {row.to_airport_info.name}
-          </span>
-        </ElTooltip>
+        <div>
+          <div>出发: {row.depart_time}</div>
+          <div>到达: {row.arrival_time}</div>
+        </div>
       )
     }
   },
   {
-    label: '出发时间',
-    field: 'depart_time',
-    width: '180px'
-  },
-  {
-    label: '到达时间',
-    field: 'arrival_time',
-    width: '180px'
-  },
-  {
-    label: '座位类型',
-    field: 'seat_type',
-    width: '100px'
-  },
-  {
-    label: '座位号',
-    field: 'seat_number',
-    width: '100px'
+    label: '座位信息',
+    field: '',
+    width: '120px',
+    formatter: (row: FlightListItem) => {
+      return (
+        <div>
+          <div>{row.seat_type}</div>
+          <div>{row.seat_number}</div>
+        </div>
+      )
+    }
   },
   {
     label: '价格',
@@ -157,7 +162,7 @@ const columns: TableColumn[] = [
   {
     label: '路线图',
     field: '',
-    width: '300px',
+    width: '600px',
     slots: {
       default: (data: TableSlotDefault) => {
         const { row } = data
@@ -171,7 +176,7 @@ const columns: TableColumn[] = [
                 {roadMap}
               </a>
             )}
-            <div class="flex gap-5px">
+            <div class="flex flex-wrap gap-5px">
               <BaseButton
                 type="primary"
                 size="small"
@@ -187,13 +192,22 @@ const columns: TableColumn[] = [
                 抓取
               </BaseButton>
               {roadMap && (
-                <BaseButton
-                  type="primary"
-                  size="small"
-                  onClick={() => handleViewRoadMap(flight.id, roadMap)}
-                >
-                  展示路线图
-                </BaseButton>
+                <>
+                  <BaseButton
+                    type="primary"
+                    size="small"
+                    onClick={() => handleViewRoadMap(flight.id, roadMap)}
+                  >
+                    展示路线图
+                  </BaseButton>
+                  <BaseButton
+                    type="primary"
+                    size="small"
+                    onClick={() => handleSyncToIcloud(flight.id)}
+                  >
+                    同步到iCloud
+                  </BaseButton>
+                </>
               )}
             </div>
           </div>
@@ -518,6 +532,69 @@ const handleGenerateRoadMap = (flightId: number) => {
 }
 
 // 开始抓取路线图
+
+// 同步到iCloud相关状态
+const syncDialogVisible = ref(false)
+const syncMessages = ref<string[]>([])
+const syncProgress = ref(0)
+const syncStatus = ref<'pending' | 'syncing' | 'success' | 'error'>('pending')
+const syncFlightId = ref(0)
+
+// 处理同步到icloud
+const handleSyncToIcloud = async (flightId: number) => {
+  syncFlightId.value = flightId
+  syncMessages.value = ['开始同步到iCloud...']
+  syncProgress.value = 0
+  syncStatus.value = 'syncing'
+  syncDialogVisible.value = true
+
+  // 先初始化定时器变量
+  let progressInterval: number = 0
+
+  // 模拟进度更新函数
+  const simulateProgress = () => {
+    progressInterval = window.setInterval(() => {
+      if (syncProgress.value < 90) {
+        // 保留10%在请求完成后更新
+        syncProgress.value += Math.random() * 10
+        if (syncProgress.value >= 30 && syncProgress.value < 40) {
+          syncMessages.value.push('正在准备同步数据...')
+        } else if (syncProgress.value >= 60 && syncProgress.value < 70) {
+          syncMessages.value.push('正在同步到iCloud...')
+        }
+      }
+    }, 200)
+  }
+
+  // 开始模拟进度
+  simulateProgress()
+
+  try {
+    // 使用POST请求而不是SSE
+    await request.post({
+      url: '/fog/flight/road_map/sync2icloud',
+      data: {
+        flight_id: flightId
+      }
+    })
+
+    // 请求成功后更新进度和状态
+    clearInterval(progressInterval)
+    syncProgress.value = 100
+    syncStatus.value = 'success'
+    syncMessages.value.push('同步到iCloud成功')
+
+    setTimeout(() => {
+      syncDialogVisible.value = false
+      refresh()
+    }, 1500)
+  } catch (error) {
+    // 请求失败处理
+    clearInterval(progressInterval)
+    syncStatus.value = 'error'
+    syncMessages.value.push('同步失败，请重试')
+  }
+}
 const startGenerateRoadMap = () => {
   // 创建 SSE 连接
   const eventSource = new EventSource(
@@ -732,6 +809,54 @@ onMounted(() => {
     </div>
     <template #footer>
       <BaseButton @click="viewDialogVisible = false">关闭</BaseButton>
+    </template>
+  </Dialog>
+
+  <!-- 同步到iCloud弹窗 -->
+  <Dialog
+    v-model="syncDialogVisible"
+    title="同步到iCloud"
+    width="600px"
+    :close-on-click-modal="false"
+    :close-on-press-escape="false"
+  >
+    <div>
+      <!-- 进度条 -->
+      <div class="mb-4">
+        <el-progress
+          :percentage="syncProgress"
+          :status="syncStatus === 'error' ? 'exception' : syncStatus === 'success' ? 'success' : ''"
+        />
+      </div>
+
+      <!-- 同步消息 -->
+      <div
+        style="
+          max-height: 400px;
+          padding: 10px;
+          overflow-y: auto;
+          background-color: #fafafa;
+          border: 1px solid #ebeef5;
+          border-radius: 4px;
+        "
+      >
+        <div v-for="(msg, index) in syncMessages" :key="index" class="mb-2">
+          {{ msg }}
+        </div>
+      </div>
+    </div>
+
+    <template #footer>
+      <BaseButton :disabled="syncStatus === 'syncing'" @click="syncDialogVisible = false">
+        关闭
+      </BaseButton>
+      <BaseButton
+        v-if="syncStatus === 'error'"
+        type="primary"
+        @click="handleSyncToIcloud(syncFlightId)"
+      >
+        重新同步
+      </BaseButton>
     </template>
   </Dialog>
 </template>
