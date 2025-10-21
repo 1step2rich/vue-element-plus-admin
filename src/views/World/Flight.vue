@@ -13,7 +13,6 @@ import {
 } from 'element-plus'
 import { useRouter } from 'vue-router'
 import AMapRoute from '@/components/AMapRoute/index.vue'
-import http from '@/axios'
 import {
   getFlightListApi,
   deleteFlightApi,
