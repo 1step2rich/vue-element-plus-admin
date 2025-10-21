@@ -2,8 +2,17 @@
 import { ContentWrap } from '@/components/ContentWrap'
 import { Table, TableColumn, TableSlotDefault } from '@/components/Table'
 import { ref, unref, reactive, onMounted, nextTick } from 'vue'
-import { ElMessage, ElMessageBox, ElOption, ElTooltip, ElButton, ElUpload } from 'element-plus'
+import {
+  ElMessage,
+  ElMessageBox,
+  ElOption,
+  ElTooltip,
+  ElButton,
+  ElUpload,
+  ElProgress
+} from 'element-plus'
 import { useRouter } from 'vue-router'
+import AMapRoute from '@/components/AMapRoute/index.vue'
 import {
   getFlightListApi,
   deleteFlightApi,
@@ -331,6 +340,7 @@ const currentFlightId = ref(0)
 const currentRoadMap = ref('')
 const generateMessages = ref<string[]>([])
 const uploadFile = ref<any>(null)
+const gpsPoints = ref<Array<{ lng: number; lat: number }>>([])
 
 // 打开编辑弹窗
 const handleEdit = (row: FlightListItem) => {
@@ -622,10 +632,26 @@ const startGenerateRoadMap = () => {
 }
 
 // 处理查看路线图
-const handleViewRoadMap = (flightId: number, roadMap: string) => {
+const handleViewRoadMap = async (flightId: number, roadMap: string) => {
   currentRoadMap.value = roadMap
   viewDialogVisible.value = true
-  console.log(flightId)
+
+  try {
+    // 调用API获取GPS点
+    const response = await request.get({
+      url: '/fog/flight/get_gps_points?flight_id=' + flightId
+    })
+    if (response.data && response.data.gps_points) {
+      gpsPoints.value = response.data.gps_points
+    } else {
+      gpsPoints.value = []
+      ElMessage.warning('未获取到GPS路线数据')
+    }
+  } catch (error) {
+    console.error('获取GPS点失败:', error)
+    ElMessage.error('获取GPS路线数据失败')
+    gpsPoints.value = []
+  }
 }
 
 // 组件挂载时加载机场列表
@@ -798,14 +824,10 @@ onMounted(() => {
   </Dialog>
 
   <!-- 查看路线图弹窗 -->
-  <Dialog v-model="viewDialogVisible" title="路线图" width="100%" height="100%" fullscreen>
-    <div style="width: 100%; height: 100%">
-      <!-- 这里需要引入KML文件解析和地图展示的库 -->
-      <!-- 由于没有具体的KML展示库，这里只做简单显示 -->
-      <div style="display: flex; justify-content: center; align-items: center; height: 100%">
-        <div>路线图文件: {{ currentRoadMap }}</div>
-        <div style="margin-top: 20px">KML地图展示区域(需要引入地图库实现)</div>
-      </div>
+  <Dialog v-model="viewDialogVisible" title="路线图" fullscreen>
+    <div style="width: 100%; height: calc(100vh - 60px); padding: 0">
+      <!-- 使用高德地图组件展示路线 -->
+      <AMapRoute :gpsPoints="gpsPoints" />
     </div>
     <template #footer>
       <BaseButton @click="viewDialogVisible = false">关闭</BaseButton>
@@ -823,7 +845,7 @@ onMounted(() => {
     <div>
       <!-- 进度条 -->
       <div class="mb-4">
-        <el-progress
+        <ElProgress
           :percentage="syncProgress"
           :status="syncStatus === 'error' ? 'exception' : syncStatus === 'success' ? 'success' : ''"
         />
