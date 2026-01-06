@@ -105,6 +105,22 @@ export const asyncRouterMap: AppRouteRecordRaw[] = [
         meta: {
           title: '机场/火车站管理'
         }
+      },
+      {
+        path: 'city',
+        component: () => import('@/views/World/City.vue'),
+        name: 'City',
+        meta: {
+          title: '城市管理'
+        }
+      },
+      {
+        path: 'location',
+        component: () => import('@/views/World/Location.vue'),
+        name: 'Location',
+        meta: {
+          title: '地点管理'
+        }
       }
     ]
   },
