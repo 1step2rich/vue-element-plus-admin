@@ -2,7 +2,7 @@
 import { ContentWrap } from '@/components/ContentWrap'
 import { Table, TableColumn, TableSlotDefault } from '@/components/Table'
 import { ref, unref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox, ElTag, ElImage } from 'element-plus'
+import { ElMessage, ElMessageBox, ElImage } from 'element-plus'
 import {
   getLocationListApi,
   deleteLocationApi,
@@ -211,8 +211,9 @@ const imageUrl = ref('')
 // 处理图片上传
 const handleImageChange: UploadProps['onChange'] = (uploadFile) => {
   fileList.value = [uploadFile]
-  if (uploadFile.response) {
-    imageUrl.value = uploadFile.response.url
+  const response = uploadFile.response as { url?: string }
+  if (response?.url) {
+    imageUrl.value = response.url
   }
 }
 
@@ -289,10 +290,10 @@ const handleSave = async () => {
 
   try {
     if (formData.id === 0) {
-      await saveLocationApi(formData)
+      await saveLocationApi(formData as any)
       ElMessage.success('添加成功')
     } else {
-      await updateLocationApi(formData)
+      await updateLocationApi(formData as any)
       ElMessage.success('修改成功')
     }
     dialogVisible.value = false

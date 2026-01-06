@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, nextTick } from 'vue'
-import { ElMessage, ElButton, ElInput, ElSelect, ElOption } from 'element-plus'
+import { ref, onMounted, watch } from 'vue'
+import { ElMessage, ElButton, ElInput } from 'element-plus'
 import { propTypes } from '@/utils/propTypes'
 import AMapLoader from '@amap/amap-jsapi-loader'
 
@@ -29,10 +29,10 @@ const searchInput = ref('朝阳区')
 const levelSelect = ref('district') // 添加行政级别选择变量
 const boundsData = ref('')
 const mapContainer = ref<HTMLElement | null>(null)
-let map = null
+let map: any = null
 let isMapInitialized = false
-let districtSearch = null
-let polygon = null
+let districtSearch: any = null
+let polygon: any = null
 
 // 设置AMap安全配置
 window._AMapSecurityConfig = {
@@ -195,13 +195,11 @@ const drawBounds = () => {
     const bounds = districtList.boundaries
 
     if (bounds && bounds.length > 0) {
-      // 保存边界数据
-      boundsData.value = bounds.join('|')
-
       // 生成行政区划polygon
       for (let i = 0; i < bounds.length; i += 1) {
         bounds[i] = [bounds[i]]
       }
+      boundsData.value = JSON.stringify(bounds)
 
       polygon = new window.AMap.Polygon({
         strokeWeight: 1,
@@ -239,15 +237,6 @@ const confirmBounds = () => {
 // 关闭对话框
 const closeDialog = () => {
   emit('close')
-}
-
-// 处理回车键
-const handleKeydown = (e) => {
-  if (e.keyCode === 13) {
-    drawBounds()
-    return false
-  }
-  return true
 }
 </script>
 

@@ -58,7 +58,7 @@ watch(
 
 const dialogStyle = computed(() => {
   return {
-    maxHeight: unref(dialogHeight)
+    height: unref(dialogHeight)
   }
 })
 </script>

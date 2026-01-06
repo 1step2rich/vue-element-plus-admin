@@ -1,14 +1,14 @@
 <script setup lang="tsx">
 import { ContentWrap } from '@/components/ContentWrap'
 import { Table, TableColumn, TableSlotDefault } from '@/components/Table'
-import { ref, unref, reactive, onMounted, watch, nextTick } from 'vue'
-import { ElMessage, ElMessageBox, ElTag, ElTimeline, ElTimelineItem } from 'element-plus'
+import { ref, unref, reactive, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { getCitiesApi, deleteCityApi, saveCityApi, updateCityApi } from '@/api/city'
 import { useTable } from '@/hooks/web/useTable'
 import { BaseButton } from '@/components/Button'
 import { FormSchema, Form } from '@/components/Form'
 import { Dialog } from '@/components/Dialog'
-import { ElRow, ElCol, ElInput, ElSelect, ElDatePicker, ElTimePicker } from 'element-plus'
+import { ElRow, ElCol, ElInput, ElDatePicker } from 'element-plus'
 import type { CityItem } from '../../api/city/types'
 // 引入新创建的高德地图行政区划组件
 import AMapDistrict from '@/components/AMapDistrict/index.vue'
@@ -167,7 +167,7 @@ const formData = reactive({
   id: 0,
   name: '',
   english_name: '',
-  first_visit_date: null as string | null,
+  first_visit_date: undefined as string | undefined,
   desc: '',
   bounds: '[]'
 })
@@ -206,7 +206,7 @@ const handleAdd = () => {
     id: 0,
     name: '',
     english_name: '',
-    first_visit_date: null,
+    first_visit_date: undefined,
     desc: '',
     bounds: '[]'
   })
