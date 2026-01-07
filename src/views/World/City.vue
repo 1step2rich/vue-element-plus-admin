@@ -122,14 +122,10 @@ const openMapDialog = () => {
 }
 
 // 打开地图展示弹窗（展示已保存边界用）
-const openShowMapDialog = (bounds: string) => {
+const openShowMapDialog = (bounds: string, cityName: string) => {
   showMapBounds.value = bounds
+  formData.name = cityName // 保存城市名称
   showMapDialogVisible.value = true
-}
-
-// 确认选择边界
-const handleConfirmBounds = (bounds: string) => {
-  formData.bounds = bounds
 }
 
 // 展示地图
@@ -140,12 +136,17 @@ const handleShowMap = (row: CityItem) => {
       return
     }
 
-    // 直接打开地图展示弹窗
-    openShowMapDialog(row.bounds)
+    // 直接打开地图展示弹窗，并传递城市名称
+    openShowMapDialog(row.bounds, row.name)
   } catch (error) {
     console.error('展示地图失败:', error)
     ElMessage.error('解析边界数据失败')
   }
+}
+
+// 确认选择边界
+const handleConfirmBounds = (bounds: string) => {
+  formData.bounds = bounds
 }
 
 // 搜索表单配置
@@ -369,7 +370,7 @@ onMounted(() => {
       v-model="mapDialogVisible"
       title="高德地图搜索边界"
       width="80%"
-      maxHeight="800px"
+      maxHeight="700px"
       class="map-dialog"
     >
       <AMapDistrict
@@ -386,11 +387,12 @@ onMounted(() => {
       v-model="showMapDialogVisible"
       title="展示地图边界"
       width="80%"
-      maxHeight="800px"
+      maxHeight="500px"
       class="map-dialog"
     >
       <AMapDistrict
         :visible="showMapDialogVisible"
+        :city-name="formData.name"
         :existing-bounds="showMapBounds"
         @close="showMapDialogVisible = false"
         style="width: 100%; height: 100%"

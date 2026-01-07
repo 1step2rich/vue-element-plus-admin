@@ -205,8 +205,12 @@ const initMap = async () => {
       }
     }, 100)
 
-    // 初始化后默认查询一次
-    drawBounds()
+    // 初始化后默认查询一次，但如果有传入existingBounds则不执行默认查询
+    if (!props.existingBounds) {
+      drawBounds()
+    } else {
+      drawExistingBounds()
+    }
   } catch (error) {
     console.error('地图初始化失败:', error)
     ElMessage.error('地图初始化失败')
@@ -301,7 +305,7 @@ const closeDialog = () => {
 
 <template>
   <div class="map-container">
-    <div class="search-box" v-if="boundsData === undefined">
+    <div class="search-box" v-if="existingBounds === ''">
       <div class="search-item">
         <span class="label">城市名称</span>
         <el-input
@@ -327,7 +331,7 @@ const closeDialog = () => {
     </div>
 
     <!-- 组件内部的操作按钮 -->
-    <div class="map-actions">
+    <div class="map-actions" v-if="existingBounds === ''">
       <el-button @click="closeDialog">取 消</el-button>
       <el-button type="primary" @click="confirmBounds">确 定</el-button>
     </div>
