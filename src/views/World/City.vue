@@ -111,17 +111,39 @@ const columns: TableColumn[] = [
   }
 ]
 
+// 地图弹窗控制
+const mapDialogVisible = ref(false)
+const showMapDialogVisible = ref(false) // 新增：用于展示已保存地图边界的弹窗
+const showMapBounds = ref('') // 新增：用于存储要展示的边界数据
+
+// 打开地图弹窗（搜索边界用）
+const openMapDialog = () => {
+  mapDialogVisible.value = true
+}
+
+// 打开地图展示弹窗（展示已保存边界用）
+const openShowMapDialog = (bounds: string) => {
+  showMapBounds.value = bounds
+  showMapDialogVisible.value = true
+}
+
+// 确认选择边界
+const handleConfirmBounds = (bounds: string) => {
+  formData.bounds = bounds
+}
+
 // 展示地图
 const handleShowMap = (row: CityItem) => {
   try {
-    const bounds = JSON.parse(row.bounds)
-    if (Array.isArray(bounds) && bounds.length === 4) {
-      ElMessage.success(`地图边界: ${bounds.join(', ')}`)
-      // 这里可以添加实际的地图展示逻辑
-    } else {
-      ElMessage.warning('边界数据格式不正确')
+    if (!row.bounds) {
+      ElMessage.warning('该城市没有边界数据')
+      return
     }
+
+    // 直接打开地图展示弹窗
+    openShowMapDialog(row.bounds)
   } catch (error) {
+    console.error('展示地图失败:', error)
     ElMessage.error('解析边界数据失败')
   }
 }
@@ -172,18 +194,18 @@ const formData = reactive({
   bounds: '[]'
 })
 
-// 地图弹窗控制
-const mapDialogVisible = ref(false)
+// 地图弹窗控制 - 已在前面声明，此处删除重复声明
+// const mapDialogVisible = ref(false)
 
-// 打开地图弹窗
-const openMapDialog = () => {
-  mapDialogVisible.value = true
-}
+// 打开地图弹窗 - 已在前面声明，此处删除重复声明
+// const openMapDialog = () => {
+//   mapDialogVisible.value = true
+// }
 
-// 确认选择边界
-const handleConfirmBounds = (bounds: string) => {
-  formData.bounds = bounds
-}
+// 确认选择边界 - 已在前面声明，此处删除重复声明
+// const handleConfirmBounds = (bounds: string) => {
+//   formData.bounds = bounds
+// }
 
 // 打开编辑弹窗
 const handleEdit = (row: CityItem) => {
@@ -355,6 +377,22 @@ onMounted(() => {
         :visible="mapDialogVisible"
         @confirm="handleConfirmBounds"
         @close="mapDialogVisible = false"
+        style="width: 100%; height: 100%"
+      />
+    </Dialog>
+
+    <!-- 新增：用于展示已保存地图边界的弹窗 -->
+    <Dialog
+      v-model="showMapDialogVisible"
+      title="展示地图边界"
+      width="80%"
+      maxHeight="800px"
+      class="map-dialog"
+    >
+      <AMapDistrict
+        :visible="showMapDialogVisible"
+        :existing-bounds="showMapBounds"
+        @close="showMapDialogVisible = false"
         style="width: 100%; height: 100%"
       />
     </Dialog>

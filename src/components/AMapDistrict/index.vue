@@ -15,7 +15,9 @@ declare global {
 // 定义组件属性
 const props = defineProps({
   cityName: propTypes.string.def(''),
-  visible: propTypes.bool.def(false)
+  visible: propTypes.bool.def(false),
+  // 新增：接收已有的边界数据用于展示
+  existingBounds: propTypes.string.def('')
 })
 
 // 定义事件
@@ -44,7 +46,9 @@ watch(
   () => props.cityName,
   (newName) => {
     console.log('城市名称变化:', newName)
-    searchInput.value = newName || '朝阳区'
+    if (!boundsData.value) {
+      searchInput.value = newName || '朝阳区'
+    }
   },
   { immediate: true } // 立即执行监听回调
 )
@@ -57,17 +61,72 @@ watch(
     if (newVisible) {
       setTimeout(() => {
         initMap()
+        // 如果有传入边界数据，绘制边界
+        if (props.existingBounds) {
+          setTimeout(() => {
+            drawExistingBounds()
+          }, 100)
+        }
       }, 100)
     }
   }
 )
 
+// 监听已有的边界数据变化
+watch(
+  () => props.existingBounds,
+  (newBounds) => {
+    console.log('边界数据变化:', newBounds)
+    if (newBounds && props.visible && isMapInitialized) {
+      drawExistingBounds()
+    }
+  },
+  { immediate: true }
+)
+
+// 绘制已有的边界数据
+const drawExistingBounds = () => {
+  if (!map || !props.existingBounds) {
+    return
+  }
+
+  try {
+    // 清除已有多边形
+    if (polygon) {
+      map.remove(polygon)
+      polygon = null
+    }
+
+    // 解析边界数据
+    const bounds = JSON.parse(props.existingBounds)
+    if (!Array.isArray(bounds) || bounds.length === 0) {
+      ElMessage.warning('边界数据格式不正确')
+      return
+    }
+
+    console.log('开始绘制已有的边界数据:', bounds)
+    // 生成行政区划polygon
+    polygon = new window.AMap.Polygon({
+      strokeWeight: 1,
+      path: bounds,
+      fillOpacity: 0.4,
+      fillColor: '#80d8ff',
+      strokeColor: '#0091ea'
+    })
+
+    map.add(polygon)
+    map.setFitView(polygon) // 视口自适应
+    ElMessage.success('边界数据绘制成功')
+  } catch (error) {
+    console.error('绘制边界失败:', error)
+    ElMessage.error('解析边界数据失败')
+  }
+}
+
 // 组件挂载时检查是否需要初始化地图
 onMounted(() => {
   console.log('AMapDistrict组件已挂载', props.visible)
-  console.log('DOM结构:', document.body.innerHTML)
   setTimeout(() => {
-    console.log('100ms后DOM结构:', document.body.innerHTML)
     console.log('地图容器:', document.querySelector('.map-container .map'))
     if (props.visible) {
       initMap()
@@ -242,7 +301,7 @@ const closeDialog = () => {
 
 <template>
   <div class="map-container">
-    <div class="search-box">
+    <div class="search-box" v-if="boundsData === undefined">
       <div class="search-item">
         <span class="label">城市名称</span>
         <el-input
