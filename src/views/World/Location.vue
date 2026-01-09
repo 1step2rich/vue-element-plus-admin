@@ -1,7 +1,7 @@
 <script setup lang="tsx">
 import { ContentWrap } from '@/components/ContentWrap'
 import { Table, TableColumn, TableSlotDefault } from '@/components/Table'
-import { ref, unref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, unref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, ElImage, ElOption } from 'element-plus'
 import {
   getLocationListApi,
@@ -500,7 +500,13 @@ const handleCloseViewMapDialog = () => {
     </Dialog>
 
     <!-- 高德地图选择弹窗 -->
-    <Dialog v-model="showMapDialog" title="选择经纬度" width="800px" height="600px">
+    <Dialog
+      v-model="showMapDialog"
+      title="选择经纬度"
+      width="800px"
+      height="600px"
+      maxHeight="600px"
+    >
       <AMapSelector
         :visible="showMapDialog"
         :lng="formData.lng"
@@ -511,7 +517,13 @@ const handleCloseViewMapDialog = () => {
     </Dialog>
 
     <!-- 高德地图查看弹窗 -->
-    <Dialog v-model="showViewMapDialog" title="查看位置" width="800px" height="600px">
+    <Dialog
+      v-model="showViewMapDialog"
+      title="查看位置"
+      width="800px"
+      height="600px"
+      maxHeight="600px"
+    >
       <AMapViewer
         :visible="showViewMapDialog"
         :lng="viewMapCenter[0]"
