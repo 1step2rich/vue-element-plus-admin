@@ -2,7 +2,7 @@
 import { ContentWrap } from '@/components/ContentWrap'
 import { Table, TableColumn, TableSlotDefault } from '@/components/Table'
 import { ref, unref, reactive, computed, onMounted, watch } from 'vue'
-import { ElMessage, ElMessageBox, ElImage } from 'element-plus'
+import { ElMessage, ElMessageBox, ElImage, ElOption } from 'element-plus'
 import {
   getLocationListApi,
   deleteLocationApi,
@@ -15,9 +15,10 @@ import { BaseButton } from '@/components/Button'
 import { FormSchema, Form } from '@/components/Form'
 import { Dialog } from '@/components/Dialog'
 import { ElRow, ElCol, ElInput, ElSelect, ElUpload, ElDatePicker } from 'element-plus'
+import AMapSelector from '@/components/AMapSelector/index.vue'
+import AMapViewer from '@/components/AMapViewer/index.vue'
 import type { LocationItem } from '../../api/location/types'
 import type { UploadProps } from 'element-plus'
-import AMapLoader from '@amap/amap-jsapi-loader'
 
 // 筛选条件
 const keyword = ref('')
@@ -70,46 +71,25 @@ const columns: TableColumn[] = [
     width: '120px'
   },
   {
-    label: '经度',
-    field: 'lng',
-    width: '200px',
+    label: '经纬度',
+    field: 'coordinates',
+    width: '300px',
     slots: {
       default: (data: TableSlotDefault) => {
         const { row } = data
+        const locationRow = row as LocationItem
+        const hasCoordinates = locationRow.lng && locationRow.lat
         return (
           <div class="flex items-center gap-5px">
-            <span>{(row as LocationItem).lng?.toFixed(6) || '-'}</span>
-            {(row as LocationItem).lng && (row as LocationItem).lat && (
+            <span>
+              {hasCoordinates
+                ? `${locationRow.lng?.toFixed(6)}, ${locationRow.lat?.toFixed(6)}`
+                : '-'}
+            </span>
+            {hasCoordinates && (
               <BaseButton
                 size="small"
-                onClick={() =>
-                  handleViewMap((row as LocationItem).lng!, (row as LocationItem).lat!)
-                }
-              >
-                定位
-              </BaseButton>
-            )}
-          </div>
-        )
-      }
-    }
-  },
-  {
-    label: '纬度',
-    field: 'lat',
-    width: '200px',
-    slots: {
-      default: (data: TableSlotDefault) => {
-        const { row } = data
-        return (
-          <div class="flex items-center gap-5px">
-            <span>{(row as LocationItem).lat?.toFixed(6) || '-'}</span>
-            {(row as LocationItem).lng && (row as LocationItem).lat && (
-              <BaseButton
-                size="small"
-                onClick={() =>
-                  handleViewMap((row as LocationItem).lng!, (row as LocationItem).lat!)
-                }
+                onClick={() => handleViewMap(locationRow.lng!, locationRow.lat!)}
               >
                 定位
               </BaseButton>
@@ -187,7 +167,7 @@ const schema = reactive<FormSchema[]>([
     componentProps: {
       placeholder: '请选择城市',
       options: computed(() => [
-        { label: '全部', value: undefined },
+        { label: '全部', value: '0' },
         ...cities.value.map((city) => ({
           label: city.name,
           value: city.id
@@ -210,17 +190,6 @@ const dialogTitle = ref('')
 const showMapDialog = ref(false)
 const showViewMapDialog = ref(false)
 const viewMapCenter = ref([116.397428, 39.90923])
-let map: any = null
-let marker: any = null
-let viewMap: any = null
-let viewMarker: any = null
-let isMapInitialized = false
-let isViewMapInitialized = false
-
-// 设置AMap安全配置
-window._AMapSecurityConfig = {
-  securityJsCode: '195bfb7983cf42035fc117aa3d23a1d8'
-}
 
 const formData = reactive({
   id: 0,
@@ -264,8 +233,9 @@ const handleRemoveImage = (index: number) => {
 // 获取城市列表
 const loadCities = async () => {
   try {
-    const res = await getCitiesApi({})
-    cities.value = res.data.list
+    const res = await getCitiesApi({ page: 1, page_size: 1000 })
+    cities.value = res.data
+    console.log('获取到的城市列表:', cities.value)
   } catch (error) {
     ElMessage.error('获取城市列表失败')
   }
@@ -366,127 +336,6 @@ onMounted(() => {
   loadCities()
 })
 
-// 打开地图弹窗时初始化地图
-watch(
-  () => showMapDialog.value,
-  (newVal) => {
-    if (newVal) {
-      setTimeout(() => {
-        initMap()
-      }, 100)
-    }
-  }
-)
-
-// 初始化高德地图
-const initMap = async () => {
-  try {
-    // 确保地图容器已挂载
-    const mapContainer = document.getElementById('mapContainer')
-    if (!mapContainer) {
-      console.error('地图容器未找到或未挂载')
-      ElMessage.error('地图容器未找到')
-      return
-    }
-
-    // 检查地图容器的尺寸
-    const containerRect = mapContainer.getBoundingClientRect()
-    console.log('地图容器尺寸:', containerRect)
-    if (containerRect.width <= 0 || containerRect.height <= 0) {
-      ElMessage.warning('地图容器尺寸异常，可能还未完全渲染')
-      // 尝试设置最小尺寸
-      mapContainer.style.minWidth = '400px'
-      mapContainer.style.minHeight = '400px'
-      // 等待DOM更新后重试
-      setTimeout(() => {
-        initMap()
-      }, 100)
-      return
-    }
-
-    // 如果地图已初始化，直接返回
-    if (isMapInitialized && map) {
-      console.log('地图已初始化，直接使用现有实例')
-      // 强制调整地图大小
-      map.resize()
-      return
-    }
-
-    if (!window.AMap) {
-      await AMapLoader.load({
-        key: '4c44d7b6c3a165b57ebc9aae7381f120',
-        version: '2.0',
-        plugins: ['AMap.ToolBar', 'AMap.Scale', 'AMap.MapType', 'AMap.PlaceSearch']
-      })
-    }
-
-    if (map) {
-      map.destroy()
-    }
-
-    map = new window.AMap.Map('mapContainer', {
-      resizeEnable: true,
-      center: [formData.lng || 116.397428, formData.lat || 39.90923],
-      zoom: 13
-    })
-
-    isMapInitialized = true
-    console.log('地图初始化成功')
-
-    // 地图初始化后，强制调整大小以确保正确显示
-    setTimeout(() => {
-      if (map) {
-        map.resize()
-        console.log('地图大小已调整')
-      }
-    }, 100)
-
-    if (marker) {
-      marker.remove()
-    }
-
-    marker = new window.AMap.Marker({
-      position: [formData.lng || 116.397428, formData.lat || 39.90923],
-      draggable: true,
-      map: map
-    })
-
-    // 点击地图添加标记
-    map.on('click', (e: any) => {
-      const { lnglat } = e
-      marker.setPosition(lnglat)
-    })
-
-    // 拖动标记结束后更新位置
-    marker.on('dragend', (_: any) => {
-      // 拖动结束后位置会自动更新，无需额外处理
-    })
-
-    // 添加控件
-    map.addControl(new window.AMap.ToolBar())
-    map.addControl(new window.AMap.Scale())
-    map.addControl(new window.AMap.MapType())
-
-    // 添加搜索功能
-    window.AMap.plugin(['AMap.PlaceSearch'], function () {
-      const placeSearch = new window.AMap.PlaceSearch({
-        map: map
-      })
-      // 搜索结果回调
-      window.AMap.event.addListener(placeSearch, 'selectChanged', function () {
-        const selected = placeSearch.getSelect()
-        if (selected) {
-          marker.setPosition(selected.lnglat)
-        }
-      })
-    })
-  } catch (error) {
-    console.error('初始化地图失败:', error)
-    ElMessage.error('地图加载失败')
-    isMapInitialized = false
-  }
-}
-
 // 查看地图位置
 const handleViewMap = (lng: number, lat: number) => {
   viewMapCenter.value = [lng, lat]
@@ -494,108 +343,21 @@ const handleViewMap = (lng: number, lat: number) => {
 }
 
 // 确认地图位置选择
-const confirmMapLocation = () => {
-  if (marker) {
-    const position = marker.getPosition()
-    formData.lng = position.lng
-    formData.lat = position.lat
-    showMapDialog.value = false
-  }
+const handleConfirmMapLocation = (lng: number, lat: number) => {
+  formData.lng = lng
+  formData.lat = lat
+  showMapDialog.value = false
 }
 
-// 初始化查看地图
-const initViewMap = async () => {
-  try {
-    // 确保地图容器已挂载
-    const viewMapContainer = document.getElementById('viewMapContainer')
-    if (!viewMapContainer) {
-      console.error('查看地图容器未找到或未挂载')
-      ElMessage.error('地图容器未找到')
-      return
-    }
-
-    // 检查地图容器的尺寸
-    const containerRect = viewMapContainer.getBoundingClientRect()
-    console.log('查看地图容器尺寸:', containerRect)
-    if (containerRect.width <= 0 || containerRect.height <= 0) {
-      ElMessage.warning('地图容器尺寸异常，可能还未完全渲染')
-      // 尝试设置最小尺寸
-      viewMapContainer.style.minWidth = '400px'
-      viewMapContainer.style.minHeight = '400px'
-      // 等待DOM更新后重试
-      setTimeout(() => {
-        initViewMap()
-      }, 100)
-      return
-    }
-
-    // 如果地图已初始化，直接返回
-    if (isViewMapInitialized && viewMap) {
-      console.log('查看地图已初始化，直接使用现有实例')
-      // 强制调整地图大小
-      viewMap.resize()
-      return
-    }
-
-    if (!window.AMap) {
-      await AMapLoader.load({
-        key: '4c44d7b6c3a165b57ebc9aae7381f120',
-        version: '2.0',
-        plugins: ['AMap.ToolBar', 'AMap.Scale', 'AMap.MapType']
-      })
-    }
-
-    if (viewMap) {
-      viewMap.destroy()
-    }
-
-    viewMap = new window.AMap.Map('viewMapContainer', {
-      resizeEnable: true,
-      center: viewMapCenter.value,
-      zoom: 15
-    })
-
-    isViewMapInitialized = true
-    console.log('查看地图初始化成功')
-
-    // 地图初始化后，强制调整大小以确保正确显示
-    setTimeout(() => {
-      if (viewMap) {
-        viewMap.resize()
-        console.log('查看地图大小已调整')
-      }
-    }, 100)
-
-    if (viewMarker) {
-      viewMarker.remove()
-    }
-
-    viewMarker = new window.AMap.Marker({
-      position: viewMapCenter.value,
-      map: viewMap
-    })
-
-    viewMap.addControl(new window.AMap.ToolBar())
-    viewMap.addControl(new window.AMap.Scale())
-    viewMap.addControl(new window.AMap.MapType())
-  } catch (error) {
-    console.error('初始化查看地图失败:', error)
-    ElMessage.error('地图加载失败')
-    isViewMapInitialized = false
-  }
+// 关闭地图选择弹窗
+const handleCloseMapDialog = () => {
+  showMapDialog.value = false
 }
 
-// 监听查看地图弹窗
-watch(
-  () => showViewMapDialog.value,
-  (newVal) => {
-    if (newVal) {
-      setTimeout(() => {
-        initViewMap()
-      }, 100)
-    }
-  }
-)
+// 关闭地图查看弹窗
+const handleCloseViewMapDialog = () => {
+  showViewMapDialog.value = false
+}
 </script>
 
 <template>
@@ -739,23 +501,23 @@ watch(
 
     <!-- 高德地图选择弹窗 -->
     <Dialog v-model="showMapDialog" title="选择经纬度" width="800px" height="600px">
-      <div id="mapContainer" style="width: 100%; height: 450px"></div>
-      <template #footer>
-        <div class="flex justify-end gap-10px">
-          <BaseButton @click="showMapDialog = false">取消</BaseButton>
-          <BaseButton type="primary" @click="confirmMapLocation">确认选择</BaseButton>
-        </div>
-      </template>
+      <AMapSelector
+        :visible="showMapDialog"
+        :lng="formData.lng"
+        :lat="formData.lat"
+        @confirm="handleConfirmMapLocation"
+        @close="handleCloseMapDialog"
+      />
     </Dialog>
 
     <!-- 高德地图查看弹窗 -->
     <Dialog v-model="showViewMapDialog" title="查看位置" width="800px" height="600px">
-      <div id="viewMapContainer" style="width: 100%; height: 450px"></div>
-      <template #footer>
-        <div class="flex justify-end gap-10px">
-          <BaseButton @click="showViewMapDialog = false">关闭</BaseButton>
-        </div>
-      </template>
+      <AMapViewer
+        :visible="showViewMapDialog"
+        :lng="viewMapCenter[0]"
+        :lat="viewMapCenter[1]"
+        @close="handleCloseViewMapDialog"
+      />
     </Dialog>
   </ContentWrap>
 </template>
