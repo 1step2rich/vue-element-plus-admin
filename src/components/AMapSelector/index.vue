@@ -16,7 +16,8 @@ declare global {
 const props = defineProps({
   visible: propTypes.bool.def(false),
   lng: propTypes.number.def(116.397428),
-  lat: propTypes.number.def(39.90923)
+  lat: propTypes.number.def(39.90923),
+  placeName: propTypes.string.def('')
 })
 
 // 定义事件
@@ -44,6 +45,7 @@ watch(
   (newVisible) => {
     console.log('选择器可见性变动', newVisible)
     if (newVisible) {
+      searchKeyword.value = props.placeName
       setTimeout(() => {
         initMap()
       }, 100)
@@ -109,6 +111,47 @@ const initMap = async () => {
       center: [props.lng, props.lat],
       zoom: 13
     })
+    // 添加控件
+    map.addControl(new window.AMap.ToolBar())
+    map.addControl(new window.AMap.Scale())
+    map.addControl(new window.AMap.MapType())
+    map.on('click', (e: any) => {
+      const { lnglat } = e
+      setMarkerPosition(lnglat)
+    })
+    // 添加搜索功能
+    window.AMap.plugin(['AMap.PlaceSearch'], function () {
+      if (map && window.AMap) {
+        try {
+          placeSearch = new window.AMap.PlaceSearch({
+            map: map
+          })
+          if (placeSearch) {
+            // 搜索结果回调
+            try {
+              console.log('这里')
+              placeSearch.on('selectChanged', function (e: any) {
+                try {
+                  const selected = e.selected.data.location
+                  console.log('选择', selected)
+                  if (!selected) {
+                    console.log('没有选择东西', e)
+                  } else {
+                    setMarkerPosition([selected.getLng(), selected.getLat()])
+                  }
+                } catch (error) {
+                  console.error('处理搜索结果失败:', error)
+                }
+              })
+            } catch (error) {
+              console.error('添加搜索结果监听器失败:', error)
+            }
+          }
+        } catch (error) {
+          console.error('创建搜索对象失败:', error)
+        }
+      }
+    })
 
     isMapInitialized = true
     console.log('地图初始化成功')
@@ -125,78 +168,13 @@ const initMap = async () => {
     if (marker) {
       marker.remove()
     }
-
-    marker = new window.AMap.Marker({
-      position: [props.lng, props.lat],
-      draggable: true,
-      map: map
-    })
-
-    // 点击地图添加标记
-    if (map && marker) {
-      map.on('click', (e: any) => {
-        const { lnglat } = e
-        marker.setPosition(lnglat)
-      })
-
-      // 拖动标记结束后更新位置
-      marker.on('dragend', (_: any) => {
-        // 拖动结束后位置会自动更新，无需额外处理
-      })
-
-      // 添加控件
-      map.addControl(new window.AMap.ToolBar())
-      map.addControl(new window.AMap.Scale())
-      map.addControl(new window.AMap.MapType())
-
-      // 添加搜索功能
-      window.AMap.plugin(['AMap.PlaceSearch'], function () {
-        if (map && window.AMap) {
-          try {
-            placeSearch = new window.AMap.PlaceSearch({
-              map: map
-            })
-            if (placeSearch) {
-              // 搜索结果回调
-              try {
-                if (typeof placeSearch.on === 'function') {
-                  placeSearch.on('selectChanged', function (e: any) {
-                    try {
-                      const selected = e.selected.data.location
-                      if (selected && marker) {
-                        marker.setPosition(selected.lnglat)
-                      }
-                    } catch (error) {
-                      console.error('处理搜索结果失败:', error)
-                    }
-                  })
-                } else if (
-                  window.AMap &&
-                  window.AMap.event &&
-                  typeof window.AMap.event.addListener === 'function'
-                ) {
-                  // 兼容旧版API
-                  window.AMap.event.addListener(placeSearch, 'selectChanged', function () {
-                    try {
-                      const selected = placeSearch.getSelect()
-                      if (selected && marker) {
-                        marker.setPosition(selected.lnglat)
-                      }
-                    } catch (error) {
-                      console.error('处理搜索结果失败:', error)
-                    }
-                  })
-                }
-              } catch (error) {
-                console.error('添加搜索结果监听器失败:', error)
-              }
-            }
-          } catch (error) {
-            console.error('创建搜索对象失败:', error)
-          }
-        }
-      })
+    if (searchKeyword.value != '' && (props.lng === 0 || props.lat === 0)) {
+      handleSearch()
+      return
     }
+    const lng = props.lng === 0 ? 116.403547 : props.lng
+    const lat = props.lat === 0 ? 39.916243 : props.lat
+    setMarkerPosition([lng, lat])
   } catch (error) {
     console.error('初始化地图失败:', error)
     ElMessage.error('地图加载失败')
@@ -204,6 +182,24 @@ const initMap = async () => {
     map = null
     marker = null
   }
+}
+
+const setMarkerPosition = (lnglat) => {
+  if (marker) {
+    marker.setPosition(lnglat)
+    return
+  }
+  marker = new window.AMap.Marker({
+    position: lnglat,
+    draggable: true,
+    map: map,
+    zIndex: 9999999999
+  })
+
+  // 拖动标记结束后更新位置
+  marker.on('dragend', (_: any) => {
+    // 拖动结束后位置会自动更新，无需额外处理
+  })
 }
 
 // 搜索位置

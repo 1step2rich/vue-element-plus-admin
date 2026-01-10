@@ -188,8 +188,14 @@ const schema = reactive<FormSchema[]>([
 const dialogVisible = ref(false)
 const dialogTitle = ref('')
 const showMapDialog = ref(false)
+const selectPlaceName = ref('')
 const showViewMapDialog = ref(false)
 const viewMapCenter = ref([116.397428, 39.90923])
+
+function showMapDialogFunc(placeName: string) {
+  selectPlaceName.value = placeName
+  showMapDialog.value = true
+}
 
 const formData = reactive({
   id: 0,
@@ -432,7 +438,9 @@ const handleCloseViewMapDialog = () => {
           <div class="mb-20px">
             <label class="block mb-5px">选择经纬度 <span style="color: red">*</span></label>
             <div class="flex gap-10px">
-              <BaseButton type="primary" @click="showMapDialog = true">高德地图选择</BaseButton>
+              <BaseButton type="primary" @click="showMapDialogFunc(formData.name)"
+                >高德地图选择</BaseButton
+              >
             </div>
           </div>
         </ElCol>
@@ -513,6 +521,7 @@ const handleCloseViewMapDialog = () => {
         :lat="formData.lat"
         @confirm="handleConfirmMapLocation"
         @close="handleCloseMapDialog"
+        :place-name="selectPlaceName"
       />
     </Dialog>
 
