@@ -210,7 +210,7 @@ const formData = reactive({
 })
 
 // 处理图片上传成功
-const handleImageSuccess: UploadProps['onSuccess'] = (response, uploadFile) => {
+const handleImageSuccess: UploadProps['onSuccess'] = (response, _) => {
   console.log('handleImageSuccess')
   const url = response.data as string
   if (url) {
@@ -231,7 +231,7 @@ const beforeUpload: UploadProps['beforeUpload'] = (rawFile) => {
 }
 
 // 处理超出限制
-const handleExceed: UploadProps['onExceed'] = (files, fileList) => {
+const handleExceed: UploadProps['onExceed'] = (_, __) => {
   ElMessage.warning(`最多只能上传10张图片`)
 }
 
