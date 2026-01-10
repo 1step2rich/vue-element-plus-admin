@@ -2,7 +2,7 @@
 import { ContentWrap } from '@/components/ContentWrap'
 import { Table, TableColumn, TableSlotDefault } from '@/components/Table'
 import { ref, unref, reactive, computed, onMounted } from 'vue'
-import { ElMessage, ElMessageBox, ElImage, ElOption } from 'element-plus'
+import { ElMessage, ElMessageBox, ElOption } from 'element-plus'
 import {
   getLocationListApi,
   deleteLocationApi,
@@ -490,7 +490,7 @@ const handleCloseViewMapDialog = () => {
                   }))
                 "
                 :on-remove="
-                  (file, fileList) => {
+                  (file:any, _) => {
                     const index = formData.images.indexOf(file.url)
                     if (index > -1) {
                       handleRemoveImage(index)
