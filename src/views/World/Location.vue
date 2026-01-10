@@ -197,11 +197,15 @@ function showMapDialogFunc(placeName: string) {
   showMapDialog.value = true
 }
 
+// 位置类型列表
+const positionTypes = ref<string[]>([])
+
 const formData = reactive({
   id: 0,
   name: '',
   english_name: '',
   city_id: undefined as number | undefined,
+  type: '',
   visit_date: '',
   lat: 0,
   lng: 0,
@@ -255,6 +259,21 @@ const loadCities = async () => {
   }
 }
 
+// 获取位置类型列表
+const loadPositionTypes = async () => {
+  try {
+    const res = await fetch('/fog/positions/types')
+    const data = await res.json()
+    if (data && Array.isArray(data.data)) {
+      positionTypes.value = data.data
+      console.log('获取到的位置类型列表:', positionTypes.value)
+    }
+  } catch (error) {
+    console.error('获取位置类型列表失败:', error)
+    // 失败时不显示错误，允许用户手动输入
+  }
+}
+
 // 打开编辑弹窗
 const handleEdit = (row: LocationItem) => {
   dialogTitle.value = '修改地点信息'
@@ -263,6 +282,7 @@ const handleEdit = (row: LocationItem) => {
     name: row.name,
     english_name: row.english_name,
     city_id: row.city_id,
+    type: row.type || '',
     visit_date: row.visit_date,
     lat: row.lat,
     lng: row.lng,
@@ -280,6 +300,7 @@ const handleAdd = () => {
     name: '',
     english_name: '',
     city_id: undefined,
+    type: '',
     visit_date: '',
     lat: 0,
     lng: 0,
@@ -353,6 +374,7 @@ const handleDelete = (id: number) => {
 onMounted(() => {
   refresh()
   loadCities()
+  loadPositionTypes()
 })
 
 // 查看地图位置
@@ -447,7 +469,22 @@ const handleCloseViewMapDialog = () => {
             <ElInput v-model.number="formData.lat" type="number" placeholder="请输入纬度" />
           </div>
         </ElCol>
-        <ElCol :span="24">
+        <ElCol :span="12">
+          <div class="mb-20px">
+            <label class="block mb-5px">位置类型</label>
+            <ElSelect
+              v-model="formData.type"
+              placeholder="请选择位置类型（或直接输入）"
+              filterable
+              allow-create
+              default-first-option
+              style="width: 100%"
+            >
+              <ElOption v-for="type in positionTypes" :key="type" :label="type" :value="type" />
+            </ElSelect>
+          </div>
+        </ElCol>
+        <ElCol :span="12">
           <div class="mb-20px">
             <label class="block mb-5px">选择经纬度 <span style="color: red">*</span></label>
             <div class="flex gap-10px">
