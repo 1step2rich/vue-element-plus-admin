@@ -389,7 +389,7 @@ const handleCloseViewMapDialog = () => {
     />
 
     <!-- 编辑/添加弹窗 -->
-    <Dialog v-model="dialogVisible" :title="dialogTitle" width="900px">
+    <Dialog v-model="dialogVisible" :title="dialogTitle" width="900px" maxHeight="600px">
       <ElRow :gutter="20">
         <ElCol :span="24">
           <div class="mb-20px">
