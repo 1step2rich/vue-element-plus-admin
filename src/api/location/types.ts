@@ -8,6 +8,7 @@ export interface LocationItem {
   lat: number
   lng: number
   desc: string
+  images: []
   create_time: string
   update_time: string
   city: {

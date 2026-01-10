@@ -221,10 +221,13 @@ const handleImageSuccess: UploadProps['onSuccess'] = (response, _) => {
 
 // 处理图片上传前
 const beforeUpload: UploadProps['beforeUpload'] = (rawFile) => {
-  console.log('beforeUpload')
-
   if (rawFile.size / 1024 / 1024 > 5) {
     ElMessage.error('图片大小不能超过5MB')
+    return false
+  }
+  const isImage = /^image\/(jpeg|jpg|png|gif|webp)$/.test(rawFile.type)
+  if (!isImage) {
+    ElMessage.error('只能上传图片文件')
     return false
   }
   return true
@@ -264,7 +267,7 @@ const handleEdit = (row: LocationItem) => {
     lat: row.lat,
     lng: row.lng,
     desc: row.desc,
-    images: [] // 清空图片列表，因为新API返回数据中没有images字段
+    images: row.images ? [...row.images] : [] // 保留已上传的图片列表
   })
   dialogVisible.value = true
 }
@@ -468,45 +471,42 @@ const handleCloseViewMapDialog = () => {
         <ElCol :span="24">
           <div class="mb-20px">
             <label class="block mb-5px">图片上传</label>
-            <ElUpload
-              action="/common/upload_file?scene=position_view"
-              list-type="picture-card"
-              :on-success="handleImageSuccess"
-              :before-upload="beforeUpload"
-              :auto-upload="true"
-              :multiple="true"
-              :limit="10"
-              :on-exceed="handleExceed"
-            >
-              <div class="text-center">
-                <span class="text-20px">+</span>
-                <div class="text-12px mt-5px">上传图片</div>
-              </div>
-            </ElUpload>
-            <div v-if="formData.images.length > 0" class="mt-10px">
-              <label class="block mb-5px">已上传图片</label>
-              <div class="flex flex-wrap gap-10px">
-                <div
-                  v-for="(img, index) in formData.images"
-                  :key="index"
-                  class="relative"
-                  style="width: 100px; height: 100px"
-                >
-                  <ElImage
-                    :src="img"
-                    fit="cover"
-                    style="width: 100%; height: 100%; border-radius: 4px"
-                    :preview-src-list="formData.images"
-                  />
-                  <div
-                    class="absolute top-0 right-0 bg-red-500 text-white w-20px h-20px flex items-center justify-center cursor-pointer rounded-full"
-                    style="font-size: 12px"
-                    @click="handleRemoveImage(index)"
-                  >
-                    ×
-                  </div>
+            <div class="mb-10px">
+              <ElUpload
+                action="/common/upload_file?scene=position_view"
+                list-type="picture-card"
+                :on-success="handleImageSuccess"
+                :before-upload="beforeUpload"
+                :auto-upload="true"
+                :multiple="true"
+                :limit="10"
+                :on-exceed="handleExceed"
+                :file-list="
+                  formData.images.map((url, index) => ({
+                    uid: index,
+                    name: `image_${index}.jpg`,
+                    status: 'success',
+                    url
+                  }))
+                "
+                :on-remove="
+                  (file, fileList) => {
+                    const index = formData.images.indexOf(file.url)
+                    if (index > -1) {
+                      handleRemoveImage(index)
+                    }
+                  }
+                "
+                :preview-src-list="formData.images"
+              >
+                <div class="text-center">
+                  <span class="text-20px">+</span>
+                  <div class="text-12px mt-5px">上传图片</div>
                 </div>
-              </div>
+              </ElUpload>
+            </div>
+            <div class="text-gray-500 text-xs mt-5px">
+              支持上传JPG、PNG、GIF、WebP格式图片，单张不超过5MB，最多10张
             </div>
           </div>
         </ElCol>
