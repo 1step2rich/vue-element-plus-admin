@@ -209,21 +209,20 @@ const formData = reactive({
   images: [] as string[]
 })
 
-// 图片上传相关
-const fileList = ref<any[]>([])
-const imageUrl = ref('')
-
-// 处理图片上传
-const handleImageChange: UploadProps['onChange'] = (uploadFile) => {
-  fileList.value = [uploadFile]
-  const response = uploadFile.response as { url?: string }
-  if (response?.url) {
-    imageUrl.value = response.url
+// 处理图片上传成功
+const handleImageSuccess: UploadProps['onSuccess'] = (response, uploadFile) => {
+  console.log('handleImageSuccess')
+  const url = response.data as string
+  if (url) {
+    formData.images.push(url)
+    ElMessage.success('图片上传成功')
   }
 }
 
 // 处理图片上传前
 const beforeUpload: UploadProps['beforeUpload'] = (rawFile) => {
+  console.log('beforeUpload')
+
   if (rawFile.size / 1024 / 1024 > 5) {
     ElMessage.error('图片大小不能超过5MB')
     return false
@@ -231,8 +230,14 @@ const beforeUpload: UploadProps['beforeUpload'] = (rawFile) => {
   return true
 }
 
+// 处理超出限制
+const handleExceed: UploadProps['onExceed'] = (files, fileList) => {
+  ElMessage.warning(`最多只能上传10张图片`)
+}
+
 // 删除图片
 const handleRemoveImage = (index: number) => {
+  console.log('handleRemoveImage')
   formData.images.splice(index, 1)
 }
 
@@ -305,15 +310,20 @@ const handleSave = async () => {
   }
 
   try {
+    let res
     if (formData.id === 0) {
-      await saveLocationApi(formData as any)
+      res = await saveLocationApi(formData as any)
       ElMessage.success('添加成功')
     } else {
-      await updateLocationApi(formData as any)
+      res = await updateLocationApi(formData as any)
       ElMessage.success('修改成功')
     }
-    dialogVisible.value = false
-    refresh()
+    if (res.error_code == 0) {
+      dialogVisible.value = false
+      refresh()
+    } else {
+      console.log('提交失败：', res.error_message)
+    }
   } catch (error) {
     ElMessage.error('操作失败')
   }
@@ -459,12 +469,14 @@ const handleCloseViewMapDialog = () => {
           <div class="mb-20px">
             <label class="block mb-5px">图片上传</label>
             <ElUpload
-              action="/api/upload"
+              action="/common/upload_file?scene=position_view"
               list-type="picture-card"
-              :on-change="handleImageChange"
+              :on-success="handleImageSuccess"
               :before-upload="beforeUpload"
-              :auto-upload="false"
-              :file-list="fileList"
+              :auto-upload="true"
+              :multiple="true"
+              :limit="10"
+              :on-exceed="handleExceed"
             >
               <div class="text-center">
                 <span class="text-20px">+</span>
