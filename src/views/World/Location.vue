@@ -261,7 +261,7 @@ const handleRemoveImage = (index: number) => {
 const loadCities = async () => {
   try {
     const res = await getCitiesApi({ page: 1, page_size: 1000 })
-    cities.value = res.data
+    cities.value = res.data.list
     console.log('获取到的城市列表:', cities.value)
   } catch (error) {
     ElMessage.error('获取城市列表失败')
