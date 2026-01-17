@@ -38,8 +38,8 @@ const { tableRegister, tableMethods, tableState } = useTable({
       city_id: unref(city_id)
     })
     return {
-      list: res.data, // 新API直接返回数据列表在data字段
-      total: res.data.length // 假设新API返回的是完整列表，实际项目中可能需要调整
+      list: res.data.list, // 新API直接返回数据列表在data字段
+      total: res.data.total // 假设新API返回的是完整列表，实际项目中可能需要调整
     }
   }
 })
@@ -69,6 +69,14 @@ const columns: TableColumn[] = [
     label: '所在城市',
     field: 'city.name',
     width: '120px'
+  },
+  {
+    label: '位置类型',
+    field: 'type',
+    width: '120px',
+    formatter: (row: LocationItem) => {
+      return row.type || '-'
+    }
   },
   {
     label: '经纬度',
@@ -191,6 +199,7 @@ const showMapDialog = ref(false)
 const selectPlaceName = ref('')
 const showViewMapDialog = ref(false)
 const viewMapCenter = ref([116.397428, 39.90923])
+const tableRef = ref<any>(null)
 
 function showMapDialogFunc(placeName: string) {
   selectPlaceName.value = placeName
@@ -412,14 +421,16 @@ const handleCloseViewMapDialog = () => {
     </div>
 
     <Table
+      ref="tableRef"
       :columns="columns"
       :data="dataList"
       :loading="loading"
       :pagination="{
         total,
-        currentPage,
         pageSize
       }"
+      v-model:currentPage="currentPage"
+      v-model:pageSize="pageSize"
       @register="tableRegister"
     />
 

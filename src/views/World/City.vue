@@ -28,8 +28,8 @@ const { tableRegister, tableMethods, tableState } = useTable({
       country: unref(country)
     })
     return {
-      list: res.data,
-      total: res.data.length
+      list: res.data.list,
+      total: res.data.total
     }
   }
 })
@@ -37,6 +37,7 @@ const { tableRegister, tableMethods, tableState } = useTable({
 const { loading, dataList, total, currentPage, pageSize } = tableState
 const { refresh } = tableMethods
 pageSize.value = 10
+const tableRef = ref<any>(null)
 
 // 表格列配置
 const columns: TableColumn[] = [
@@ -296,14 +297,16 @@ onMounted(() => {
     </div>
 
     <Table
+      ref="tableRef"
       :columns="columns"
       :data="dataList"
       :loading="loading"
       :pagination="{
         total,
-        currentPage,
         pageSize
       }"
+      v-model:currentPage="currentPage"
+      v-model:pageSize="pageSize"
       @register="tableRegister"
     />
 
