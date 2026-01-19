@@ -465,6 +465,8 @@ const handleCloseViewMapDialog = () => {
               type="date"
               placeholder="选择日期"
               style="width: 100%"
+              format="YYYY-MM-DD"
+              value-format="YYYY-MM-DD"
             />
           </div>
         </ElCol>
