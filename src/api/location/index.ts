@@ -10,7 +10,7 @@ export const getLocationListApi = (params: LocationListParams) => {
 
 export const deleteLocationApi = (id: number) => {
   return request.delete({
-    url: `/fog/positions/delete/${id}`
+    url: `/fog/positions/${id}`
   })
 }
 
