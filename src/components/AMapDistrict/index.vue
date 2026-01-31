@@ -38,7 +38,7 @@ let polygon: any = null
 
 // 设置AMap安全配置
 window._AMapSecurityConfig = {
-  securityJsCode: '195bfb7983cf42035fc117aa3d23a1d8'
+  securityJsCode: '602ddf93055d3131dc404c0c9ddf00b6'
 }
 
 // 监听城市名称变化，自动填充搜索框
@@ -175,7 +175,7 @@ const initMap = async () => {
     console.log('使用AMapLoader加载高德地图...')
     // 使用AMapLoader加载地图
     await AMapLoader.load({
-      key: '4c44d7b6c3a165b57ebc9aae7381f120', // 您的高德地图API密钥
+      key: '747223f511e62e5f6732ac3014f9a9ec', // 您的高德地图API密钥
       version: '2.0', // 指定要加载的高德地图JSAPI的版本，目前支持2.0
       plugins: ['AMap.DistrictSearch', 'AMap.Polygon'] // 加载行政区划查询和多边形绘制插件
     })

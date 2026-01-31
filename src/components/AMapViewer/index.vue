@@ -32,7 +32,7 @@ let isMapInitialized = false
 
 // 设置AMap安全配置
 window._AMapSecurityConfig = {
-  securityJsCode: '195bfb7983cf42035fc117aa3d23a1d8'
+  securityJsCode: '602ddf93055d3131dc404c0c9ddf00b6'
 }
 
 // 监听弹窗可见性变化
@@ -117,7 +117,7 @@ const initMap = async () => {
     // 使用AMapLoader加载地图
     if (!window.AMap) {
       await AMapLoader.load({
-        key: '4c44d7b6c3a165b57ebc9aae7381f120',
+        key: '747223f511e62e5f6732ac3014f9a9ec',
         version: '2.0',
         plugins: ['AMap.ToolBar', 'AMap.Scale', 'AMap.MapType']
       })

@@ -32,7 +32,7 @@ const loadAMapScript = () => {
 
     const script = document.createElement('script')
     script.id = 'amap-script'
-    script.src = 'https://webapi.amap.com/maps?v=2.0&key=4c44d7b6c3a165b57ebc9aae7381f120'
+    script.src = 'https://webapi.amap.com/maps?v=2.0&key=747223f511e62e5f6732ac3014f9a9ec'
     script.async = true
     script.defer = true
     document.head.appendChild(script)
@@ -82,7 +82,7 @@ const renderRoute = (points: Array<{ lng: number; lat: number }>) => {
   }
 
   // 转换为高德地图需要的格式
-  let path = points.map((point) => [point.lng, point.lat])
+  const path = points.map((point) => [point.lng, point.lat])
   console.log('原始路径长度:', path.length)
 
   // 创建路线（非闭合）
