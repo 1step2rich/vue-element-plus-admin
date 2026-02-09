@@ -222,28 +222,113 @@ const formData = reactive({
   images: [] as string[]
 })
 
-// 处理图片上传成功
-const handleImageSuccess: UploadProps['onSuccess'] = (response, _) => {
-  console.log('handleImageSuccess')
-  const url = response.data as string
-  if (url) {
-    formData.images.push(url)
-    ElMessage.success('图片上传成功')
+const compressImage = (
+  file: File,
+  quality: number = 0.7,
+  maxWidth: number = 1920
+): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = (event) => {
+      const img = new Image()
+      img.src = event.target?.result as string
+      img.onload = () => {
+        let width = img.width
+        let height = img.height
+
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width
+          width = maxWidth
+        }
+
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          reject(new Error('无法获取 Canvas 上下文'))
+          return
+        }
+        ctx.drawImage(img, 0, 0, width, height)
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error('图片压缩失败'))
+              return
+            }
+            const compressedFile = new File([blob], file.name, {
+              type: file.type,
+              lastModified: Date.now()
+            })
+            resolve(compressedFile)
+          },
+          file.type,
+          quality
+        )
+      }
+      img.onerror = () => {
+        reject(new Error('图片加载失败'))
+      }
+    }
+    reader.onerror = () => {
+      reject(new Error('文件读取失败'))
+    }
+  })
+}
+
+const handleImageUpload = async (file: File) => {
+  try {
+    const compressedFile = await compressImage(file, 0.7, 1920)
+    console.log(
+      `原始大小: ${(file.size / 1024 / 1024).toFixed(2)}MB, 压缩后: ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`
+    )
+    return compressedFile
+  } catch (error) {
+    console.error('图片压缩失败:', error)
+    ElMessage.error('图片处理失败')
+    throw error
   }
 }
 
-// 处理图片上传前
 const beforeUpload: UploadProps['beforeUpload'] = (rawFile) => {
-  if (rawFile.size / 1024 / 1024 > 5) {
-    ElMessage.error('图片大小不能超过5MB')
-    return false
-  }
   const isImage = /^image\/(jpeg|jpg|png|gif|webp)$/.test(rawFile.type)
   if (!isImage) {
     ElMessage.error('只能上传图片文件')
     return false
   }
   return true
+}
+
+const httpRequest: UploadProps['httpRequest'] = async (options) => {
+  const { file, onSuccess, onError } = options
+  try {
+    const compressedFile = await handleImageUpload(file as File)
+    const uploadFormData = new FormData()
+    uploadFormData.append('file', compressedFile)
+
+    const response = await fetch('/common/upload_file?scene=position_view', {
+      method: 'POST',
+      body: uploadFormData
+    })
+
+    const result = await response.json()
+    if (result.error_code === 0) {
+      const imageUrl = result.data?.url || result.data || result.url
+      if (imageUrl) {
+        formData.images.push(imageUrl)
+      }
+      onSuccess?.(result)
+    } else {
+      ElMessage.error(result.error_message || '上传失败')
+      onError?.(new Error(result.error_message || '上传失败') as any)
+    }
+  } catch (error) {
+    console.error('上传失败:', error)
+    ElMessage.error('上传失败')
+    onError?.(error as any)
+  }
 }
 
 // 处理超出限制
@@ -523,9 +608,8 @@ const handleCloseViewMapDialog = () => {
             <label class="block mb-5px">图片上传</label>
             <div class="mb-10px">
               <ElUpload
-                action="/common/upload_file?scene=position_view"
+                :http-request="httpRequest"
                 list-type="picture-card"
-                :on-success="handleImageSuccess"
                 :before-upload="beforeUpload"
                 :auto-upload="true"
                 :multiple="true"
@@ -556,7 +640,7 @@ const handleCloseViewMapDialog = () => {
               </ElUpload>
             </div>
             <div class="text-gray-500 text-xs mt-5px">
-              支持上传JPG、PNG、GIF、WebP格式图片，单张不超过5MB，最多10张
+              支持上传JPG、PNG、GIF、WebP格式图片，图片会自动压缩以减少体积，最多10张
             </div>
           </div>
         </ElCol>
