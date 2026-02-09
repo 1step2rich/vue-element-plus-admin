@@ -476,7 +476,7 @@ const handleFileChange = (fileOrFileList: any, fileList?: any[]) => {
   console.log('文件选择变化 - 原始参数2:', fileList)
   console.log('解析出的文件:', selectedFile)
 
-  if (uploadFile && selectedFile) {
+  if (uploadFile.value && selectedFile) {
     uploadFile.value = selectedFile
     console.log('uploadFile已设置:', uploadFile.value)
     console.log('uploadFile.value.raw存在:', !!uploadFile.value.raw)
@@ -490,7 +490,7 @@ const handleUploadRoadMap = (flightId: number) => {
   console.log('打开上传弹窗前:')
   console.log('uploadFile对象:', uploadFile)
   currentFlightId.value = flightId
-  if (uploadFile) {
+  if (uploadFile.value) {
     uploadFile.value = null
     console.log('已将uploadFile.value重置为null')
   }
@@ -505,7 +505,7 @@ const handleUploadFile = async () => {
   console.log('uploadFile.value:', uploadFile?.value)
   console.log('uploadFile.value.raw:', uploadFile?.value?.raw)
 
-  if (!uploadFile || !uploadFile.value || !uploadFile.value.raw) {
+  if (!uploadFile.value || !uploadFile.value.raw) {
     ElMessage.warning('请先选择文件')
     return
   }
